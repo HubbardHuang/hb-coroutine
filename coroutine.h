@@ -22,14 +22,13 @@ struct Context {
 #define STACK_SIZE 1024
 
 class Coroutine {
-public:
-    static CoroutineEnvironment env_;
-
 private:
+    std::shared_ptr<CoroutineEnvironment> env_;
     Context context_;
     char stack_[STACK_SIZE];
 
 public:
+    Coroutine();
     static void Yield();
     static void Resume(const std::shared_ptr<Coroutine>&);
     static std::shared_ptr<Coroutine> Create(CoFunc func, void* arg);
