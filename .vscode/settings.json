@@ -42,5 +42,11 @@
     ],
     "doxdocgen.generic.paramTemplate": "@param {param} ",
     "doxdocgen.generic.returnTemplate": "@return {type} ",
-    "doxdocgen.generic.splitCasingSmartText": true
+    "doxdocgen.generic.splitCasingSmartText": true,
+    "files.associations": {
+        "array": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp"
+    }
 }
