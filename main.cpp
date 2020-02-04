@@ -1,50 +1,50 @@
 #include "coroutine.h"
 #include <stdio.h>
+#include <unistd.h>
 
 void
-func2(void* arg) {
+tmp(void* arg) {
     printf("func2.\n");
 }
 
 void
-func1(void* arg) {
+co_routine(void* arg) {
     printf("yield-1.\n");
     hbco::Coroutine::Yield();
     printf("yield-2.\n");
     hbco::Coroutine::Yield();
     printf("yield-3.\n");
-    hbco::Coroutine::Resume(hbco::Coroutine::Create(func2, nullptr));
+    hbco::Coroutine::Resume(hbco::Coroutine::Create(tmp, nullptr));
     printf("func1 end.\n");
 }
 
-pthread_t pth;
-
 void*
-func3(void* arg) {
-    auto co1 = hbco::Coroutine::Create(func1, nullptr);
-    printf("another thread: yield-1.\n");
+task(void* arg) {
+    auto co1 = hbco::Coroutine::Create(co_routine, nullptr);
+    printf("%s1\n", (char*)arg);
     hbco::Coroutine::Resume(co1);
-    hbco::Coroutine::Yield();
-    printf("another thread: yield-2.\n");
+    sleep(1);
+    printf("%s2\n", (char*)arg);
     hbco::Coroutine::Resume(co1);
-    hbco::Coroutine::Yield();
-    printf("another thread: yield-3.\n");
+    sleep(1);
+    printf("%s3\n", (char*)arg);
     hbco::Coroutine::Resume(co1);
-    printf("another thread: func3 end.\n");
+    sleep(1);
+}
+
+void
+threads_test(void) {
+    pthread_t id[2];
+    char str1[] = "thread 1: ";
+    char str2[] = "thread 2: ";
+    pthread_create(&id[0], nullptr, task, str1);
+    pthread_create(&id[1], nullptr, task, str2);
+    pthread_join(id[0], nullptr);
+    pthread_join(id[1], nullptr);
 }
 
 int
 main(int argc, char** argv) {
-    // 创建协程
-    pthread_create(&pth, nullptr, func3, nullptr);
-    auto co1 = hbco::Coroutine::Create(func1, nullptr);
-    printf("1111.\n");
-    hbco::Coroutine::Resume(co1);
-    printf("2222.\n");
-    hbco::Coroutine::Resume(co1);
-    printf("3333.\n");
-    hbco::Coroutine::Resume(co1);
-    printf("4444.\n");
-    pthread_join(pth, nullptr);
+    threads_test();
     return 0;
 }
