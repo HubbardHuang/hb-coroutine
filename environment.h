@@ -4,13 +4,13 @@
 #include <map>
 #include <memory>
 #include <pthread.h>
-#include <stack>
+#include <vector>
 
 namespace hbco {
 
 class Coroutine;
 struct CoroutineEnvironment {
-    std::stack<std::shared_ptr<Coroutine>> callstack_;
+    std::vector<std::shared_ptr<Coroutine>> callstack_;
     CoroutineEnvironment();
 };
 

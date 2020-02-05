@@ -5,7 +5,7 @@ namespace hbco {
 
 CoroutineEnvironment::CoroutineEnvironment() {
     std::shared_ptr<Coroutine> main_co(new Coroutine());
-    callstack_.push(main_co);
+    callstack_.push_back(main_co);
 }
 
 static std::map<pthread_t, std::shared_ptr<CoroutineEnvironment>> env_manager;
