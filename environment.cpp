@@ -16,6 +16,7 @@ CurrEnv(void) {
     auto result = env_manager.find(curr_tid);
     if (result == env_manager.end()) {
         std::shared_ptr<CoroutineEnvironment> curr_env(new CoroutineEnvironment());
+        curr_env->callstack_.back()->env_ = curr_env;
         env_manager.insert({ curr_tid, curr_env });
     }
     return env_manager[curr_tid];
