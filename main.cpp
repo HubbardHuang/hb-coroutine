@@ -30,6 +30,9 @@ task(void* arg) {
     printf("%s3\n", (char*)arg);
     hbco::Coroutine::Resume(co1);
     sleep(1);
+    printf("%s4\n", (char*)arg);
+    hbco::Coroutine::Resume(co1);
+    sleep(1);
 }
 
 void
