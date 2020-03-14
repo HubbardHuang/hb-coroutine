@@ -29,9 +29,9 @@ private:
     bool can_run_next_time_;
     Context context_;
     char stack_[STACK_SIZE];
+    Coroutine();
 
 public:
-    Coroutine();
     static void Yield();
     static void Resume(const std::shared_ptr<Coroutine>&);
     static std::shared_ptr<Coroutine> Create(CoFunc func, void* arg);
