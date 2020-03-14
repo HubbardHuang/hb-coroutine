@@ -3,10 +3,7 @@
 
 namespace hbco {
 
-CoroutineEnvironment::CoroutineEnvironment() {
-    std::shared_ptr<Coroutine> main_co(new Coroutine());
-    callstack_.push_back(main_co);
-}
+CoroutineEnvironment::CoroutineEnvironment() {}
 
 static std::map<pthread_t, std::shared_ptr<CoroutineEnvironment>> env_manager;
 
@@ -16,7 +13,9 @@ CurrEnv(void) {
     auto result = env_manager.find(curr_tid);
     if (result == env_manager.end()) {
         std::shared_ptr<CoroutineEnvironment> curr_env(new CoroutineEnvironment());
-        curr_env->callstack_.back()->env_ = curr_env;
+        std::shared_ptr<Coroutine> main_co(new Coroutine());
+        main_co->env_ = curr_env;
+        curr_env->callstack_.push_back(main_co);
         env_manager.insert({ curr_tid, curr_env });
     }
     return env_manager[curr_tid];
