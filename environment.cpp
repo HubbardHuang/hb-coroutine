@@ -21,4 +21,8 @@ CurrEnv(void) {
     return env_manager[curr_tid];
 }
 
+const std::shared_ptr<Coroutine>&
+CurrCoroutine(void) {
+    return CurrEnv()->callstack_.back();
+}
 }
