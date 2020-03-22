@@ -7,7 +7,7 @@ CoroutineEnvironment::CoroutineEnvironment() {}
 
 static std::map<pthread_t, std::shared_ptr<CoroutineEnvironment>> env_manager;
 
-std::shared_ptr<CoroutineEnvironment>
+const std::shared_ptr<CoroutineEnvironment>&
 CurrEnv(void) {
     auto curr_tid = pthread_self();
     auto result = env_manager.find(curr_tid);

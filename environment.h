@@ -11,14 +11,14 @@ namespace hbco {
 class Coroutine;
 class CoroutineEnvironment {
     friend class Coroutine;
-    friend std::shared_ptr<CoroutineEnvironment> CurrEnv(void);
+    friend const std::shared_ptr<CoroutineEnvironment>& CurrEnv(void);
 
 private:
     std::vector<std::shared_ptr<Coroutine>> callstack_;
     CoroutineEnvironment();
 };
 
-extern std::shared_ptr<CoroutineEnvironment> CurrEnv(void);
+extern const std::shared_ptr<CoroutineEnvironment>& CurrEnv(void);
 
 }
 
