@@ -42,4 +42,9 @@ Coroutine::Create(CoFunc func, void* arg) {
     makecontext(&co->context_.ctx_, (void (*)(void))func, 0);
     return co;
 }
+
+const std::shared_ptr<Coroutine>&
+CurrCoroutine(void) {
+    return CurrEnv()->callstack_.back();
+}
 }

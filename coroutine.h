@@ -36,6 +36,8 @@ public:
     static void Resume(const std::shared_ptr<Coroutine>&);
     static std::shared_ptr<Coroutine> Create(CoFunc func, void* arg);
 };
+
+extern const std::shared_ptr<Coroutine>& CurrCoroutine(void);
 }
 
 #endif

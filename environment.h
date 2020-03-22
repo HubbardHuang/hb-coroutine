@@ -20,7 +20,6 @@ private:
 };
 
 extern const std::shared_ptr<CoroutineEnvironment>& CurrEnv(void);
-extern const std::shared_ptr<Coroutine>& CurrCoroutine(void);
 
 }
 
