@@ -32,7 +32,6 @@ Coroutine::Resume(const std::shared_ptr<Coroutine>& next_co) {
 std::shared_ptr<Coroutine>
 Coroutine::Create(CoFunc func, void* arg) {
     std::shared_ptr<Coroutine> co(new Coroutine());
-    co->env_ = CurrEnv();
     co->can_run_next_time_ = true;
     getcontext(&co->context_.ctx_);
     co->context_.ctx_.uc_stack.ss_sp = co->stack_;

@@ -22,10 +22,10 @@ struct Context {
 #define STACK_SIZE 1024 * 128
 
 class Coroutine {
+    friend CoroutineEnvironment::CoroutineEnvironment();
     friend const std::shared_ptr<CoroutineEnvironment>& CurrEnv(void);
 
 private:
-    std::shared_ptr<CoroutineEnvironment> env_;
     bool can_run_next_time_;
     Context context_;
     char stack_[STACK_SIZE];
