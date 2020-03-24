@@ -19,7 +19,7 @@ struct Context {
     ucontext ctx_;
 };
 
-#define STACK_SIZE 1024
+#define STACK_SIZE 1024 * 128
 
 class Coroutine {
     friend const std::shared_ptr<CoroutineEnvironment>& CurrEnv(void);
