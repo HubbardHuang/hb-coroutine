@@ -2,7 +2,8 @@
 
 namespace hbco {
 
-Coroutine::Coroutine() {}
+Coroutine::Coroutine(const std::string& name)
+  : name_(name) {}
 
 void
 Coroutine::Yield() {
@@ -30,8 +31,8 @@ Coroutine::Resume(const std::shared_ptr<Coroutine>& next_co) {
 }
 
 std::shared_ptr<Coroutine>
-Coroutine::Create(CoFunc func, void* arg) {
-    std::shared_ptr<Coroutine> co(new Coroutine());
+Coroutine::Create(const std::string& name, CoFunc func, void* arg) {
+    std::shared_ptr<Coroutine> co(new Coroutine(name));
     co->can_run_next_time_ = true;
     getcontext(&co->context_.ctx_);
     co->context_.ctx_.uc_stack.ss_sp = co->stack_;
