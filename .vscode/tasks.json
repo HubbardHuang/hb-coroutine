@@ -9,6 +9,7 @@
                 "-g",
                 "*.cpp",
                 "*.h",
+                "-DDEBUG",
                 "-lpthread",
                 "-o",
                 "hbco.exe"
