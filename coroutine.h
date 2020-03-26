@@ -8,7 +8,6 @@
 #define COROUTINE_H
 
 #include "environment.h"
-#include <memory>
 #include <string>
 #include <ucontext.h>
 
@@ -23,29 +22,31 @@ struct Context {
 #define STACK_SIZE 1024 * 128
 
 class Coroutine {
+    friend void ReleaseResources(void);
     friend CoroutineEnvironment::CoroutineEnvironment();
-    friend const std::shared_ptr<CoroutineEnvironment>& CurrEnv(void);
+    friend CoroutineEnvironment* CurrEnv(void);
 
 private:
     bool can_run_next_time_;
     Context context_;
     char stack_[STACK_SIZE];
     Coroutine(const std::string& name);
+    ~Coroutine() = default;
 
 #ifdef DEBUG
 public:
 #else
-    static std::shared_ptr<Coroutine> Create(const std::string& name, CoFunc func, void* arg);
+private:
 #endif
     std::string name_;
 
 public:
     static void Yield();
-    static void Resume(const std::shared_ptr<Coroutine>&);
-    static std::shared_ptr<Coroutine> Create(CoFunc func, void* arg);
+    static void Resume(Coroutine* next_co);
+    static Coroutine* Create(const std::string& name, CoFunc func, void* arg);
 };
 
-extern const std::shared_ptr<Coroutine>& CurrCoroutine(void);
+extern Coroutine* CurrCoroutine(void);
 }
 
 #endif
