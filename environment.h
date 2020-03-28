@@ -1,9 +1,9 @@
 #ifndef ENVIRONMENT_H
 #define ENVIRONMENT_H
 
+#include <list>
 #include <map>
 #include <pthread.h>
-#include <queue>
 #include <vector>
 
 namespace hbco {
@@ -22,8 +22,8 @@ private:
     ~CoroutineEnvironment() = default;
 
 public:
-    std::queue<Coroutine*> pending_;
-    std::queue<Coroutine*> runnable_;
+    std::list<Coroutine*> pending_;
+    std::list<Coroutine*> runnable_;
 };
 
 extern CoroutineEnvironment* CurrEnv(void);

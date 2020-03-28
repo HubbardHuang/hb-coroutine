@@ -15,8 +15,7 @@ Produce(void* arg) {
         resource.push(produced_num);
         Display(produced_num);
         hbco::Coroutine::CondVarSignal();
-        hbco::Coroutine::Poll();
-        sleep(1);
+        hbco::Coroutine::PollTime(1000);
     }
 }
 

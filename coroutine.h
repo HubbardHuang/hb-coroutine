@@ -8,6 +8,7 @@
 #define COROUTINE_H
 
 #include "environment.h"
+#include "time_record.h"
 #include <queue>
 #include <string>
 #include <ucontext.h>
@@ -23,11 +24,13 @@ struct Context {
 #define STACK_SIZE 1024 * 128
 
 class Coroutine {
+    friend void EventLoop(void);
     friend void ReleaseResources(void);
     friend CoroutineEnvironment::CoroutineEnvironment();
     friend CoroutineEnvironment* CurrEnv(void);
 
 private:
+    SleepRecord sleep_;
     bool can_run_next_time_;
     Context context_;
     char stack_[STACK_SIZE];
@@ -44,7 +47,7 @@ private:
 public:
     static void CondVarSignal(void);
     static void CondVarWait(void);
-    static void Poll(void);
+    static void PollTime(long duration);
     static void Yield();
     static void Resume(Coroutine* next_co);
     static Coroutine* Create(const std::string& name, CoFunc func, void* arg);
