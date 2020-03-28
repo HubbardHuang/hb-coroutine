@@ -10,6 +10,7 @@ std::queue<int> resource;
 void
 Produce(void* arg) {
     while (true) {
+        Display((const char*)arg);
         srand((unsigned)time(nullptr));
         int produced_num = rand() % 100;
         resource.push(produced_num);
@@ -26,6 +27,7 @@ Resume(void* arg) {
             hbco::Coroutine::CondVarWait();
             continue;
         }
+        Display((const char*)arg);
         int resumed_num = resource.front();
         resource.pop();
         Display(resumed_num);
@@ -35,8 +37,10 @@ Resume(void* arg) {
 int
 main(int argc, char** argv) {
     hbco::CoroutineLauncher cl;
-    hbco::Coroutine* co_producer = hbco::Coroutine::Create("co_producer", Produce, nullptr);
-    hbco::Coroutine* co_resumer = hbco::Coroutine::Create("co_resumer", Resume, nullptr);
+    char pa[] = "PRO";
+    char ra[] = "RES";
+    hbco::Coroutine* co_producer = hbco::Coroutine::Create("co_producer", Produce, pa);
+    hbco::Coroutine* co_resumer = hbco::Coroutine::Create("co_resumer", Resume, ra);
     hbco::Coroutine::Resume(co_resumer);
     hbco::Coroutine::Resume(co_producer);
 

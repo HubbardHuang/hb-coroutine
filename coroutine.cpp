@@ -74,7 +74,7 @@ Coroutine::Create(const std::string& name, CoFunc func, void* arg) {
     co->context_.ctx_.uc_stack.ss_size = sizeof(co->stack_);
     co->context_.ctx_.uc_stack.ss_flags = 0;
     co->context_.ctx_.uc_link = &(CurrEnv()->callstack_.back()->context_.ctx_);
-    makecontext(&co->context_.ctx_, (void (*)(void))func, 0);
+    makecontext(&co->context_.ctx_, (void (*)(void))func, 1, arg);
     CurrEnv()->coroutines_.push_back(co);
     return co;
 }
