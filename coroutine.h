@@ -8,6 +8,7 @@
 #define COROUTINE_H
 
 #include "environment.h"
+#include <queue>
 #include <string>
 #include <ucontext.h>
 
@@ -41,12 +42,17 @@ private:
     std::string name_;
 
 public:
+    static void CondVarSignal(void);
+    static void CondVarWait(void);
+    static void Poll(void);
     static void Yield();
     static void Resume(Coroutine* next_co);
     static Coroutine* Create(const std::string& name, CoFunc func, void* arg);
 };
 
 extern Coroutine* CurrCoroutine(void);
+extern void EventLoop(void);
+
 }
 
 #endif

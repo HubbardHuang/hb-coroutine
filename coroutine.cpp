@@ -7,6 +7,33 @@ Coroutine::Coroutine(const std::string& name)
   : name_(name) {}
 
 void
+Coroutine::CondVarSignal(void) {
+    CoroutineEnvironment* curr_env = CurrEnv();
+    if (curr_env->pending_.empty()) {
+        return;
+    }
+    Coroutine* co = curr_env->pending_.front();
+    curr_env->pending_.pop();
+    curr_env->runnable_.push(co);
+}
+
+void
+Coroutine::CondVarWait(void) {
+    CoroutineEnvironment* curr_env = CurrEnv();
+    Coroutine* curr_co = curr_env->callstack_.back();
+    curr_env->pending_.push(curr_co);
+    Yield();
+}
+
+void
+Coroutine::Poll(void) {
+    CoroutineEnvironment* curr_env = CurrEnv();
+    Coroutine* curr_co = curr_env->callstack_.back();
+    curr_env->pending_.push(curr_co);
+    Yield();
+}
+
+void
 Coroutine::Yield() {
     if (CurrEnv()->callstack_.size() == 1) {
         return;
@@ -49,4 +76,22 @@ Coroutine*
 CurrCoroutine(void) {
     return CurrEnv()->callstack_.back();
 }
+
+void
+EventLoop(void) {
+    CoroutineEnvironment* curr_env = CurrEnv();
+    while (true) {
+        while (!curr_env->pending_.empty()) {
+            Coroutine* co = curr_env->pending_.front();
+            curr_env->pending_.pop();
+            curr_env->runnable_.push(co);
+        }
+        while (!curr_env->runnable_.empty()) {
+            Coroutine* co = curr_env->runnable_.front();
+            curr_env->runnable_.pop();
+            Coroutine::Resume(co);
+        }
+    }
+}
+
 }
