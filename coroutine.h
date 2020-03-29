@@ -24,6 +24,7 @@ struct Context {
 #define STACK_SIZE 1024 * 128
 
 class Coroutine {
+    friend class CondVar;
     friend void EventLoop(void);
     friend void ReleaseResources(void);
     friend CoroutineEnvironment::CoroutineEnvironment();
@@ -45,8 +46,6 @@ private:
     std::string name_;
 
 public:
-    static void CondVarSignal(void);
-    static void CondVarWait(void);
     static void PollTime(long duration);
     static void Yield();
     static void Resume(Coroutine* next_co);

@@ -11,6 +11,7 @@ namespace hbco {
 class Coroutine;
 class CoroutineEnvironment {
     friend class Coroutine;
+    friend class CondVar;
     friend CoroutineEnvironment* CurrEnv(void);
     friend Coroutine* CurrCoroutine(void);
     friend void ReleaseResources(void);

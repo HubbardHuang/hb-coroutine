@@ -12,25 +12,6 @@ Coroutine::Coroutine(const std::string& name)
 }
 
 void
-Coroutine::CondVarSignal(void) {
-    CoroutineEnvironment* curr_env = CurrEnv();
-    if (curr_env->pending_.empty()) {
-        return;
-    }
-    Coroutine* co = curr_env->pending_.front();
-    curr_env->pending_.pop_front();
-    curr_env->runnable_.push_back(co);
-}
-
-void
-Coroutine::CondVarWait(void) {
-    CoroutineEnvironment* curr_env = CurrEnv();
-    Coroutine* curr_co = curr_env->callstack_.back();
-    curr_env->pending_.push_back(curr_co);
-    Yield();
-}
-
-void
 Coroutine::PollTime(long duration = -1) {
     CoroutineEnvironment* curr_env = CurrEnv();
     Coroutine* curr_co = curr_env->callstack_.back();
