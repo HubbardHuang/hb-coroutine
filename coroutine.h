@@ -26,6 +26,7 @@ struct Context {
 class Coroutine {
     friend class CondVar;
     friend void EventLoop(void);
+    friend void EpollEventLoop(void);
     friend void ReleaseResources(void);
     friend CoroutineEnvironment::CoroutineEnvironment();
     friend CoroutineEnvironment* CurrEnv(void);
@@ -46,6 +47,7 @@ private:
     std::string name_;
 
 public:
+    static void PollTemp(int fd, uint32_t epoll_events);
     static void PollTime(long duration);
     static void Yield();
     static void Resume(Coroutine* next_co);
@@ -54,7 +56,8 @@ public:
 
 extern Coroutine* CurrCoroutine(void);
 extern void EventLoop(void);
+extern void EpollEventLoop(void);
 
-}
+} // namespace hbco
 
 #endif

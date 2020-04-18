@@ -1,5 +1,7 @@
-#include "environment.h"
+#include <sys/epoll.h>
+
 #include "coroutine.h"
+#include "environment.h"
 #include "log.h"
 
 namespace hbco {
@@ -8,6 +10,12 @@ CoroutineEnvironment::CoroutineEnvironment() {
     Coroutine* main_co(new Coroutine("main_co"));
     callstack_.push_back(main_co);
     coroutines_.push_back(main_co);
+    epoll_fd_ = epoll_create1(0);
+}
+
+int
+CoroutineEnvironment::GetEpollFd(void) {
+    return epoll_fd_;
 }
 
 static std::map<pthread_t, CoroutineEnvironment*> env_manager;
@@ -45,4 +53,4 @@ ReleaseResources(void) {
     }
 }
 
-}
+} // namespace hbco

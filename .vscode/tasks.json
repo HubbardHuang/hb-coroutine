@@ -4,16 +4,7 @@
         {
             "type": "shell",
             "label": "g++ build active file",
-            "command": "g++",
-            "args": [
-                "-g",
-                "*.cpp",
-                "*.h",
-                "-DDEBUG",
-                "-lpthread",
-                "-o",
-                "hbco.exe"
-            ],
+            "command": "./compile.sh && rm *.o",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

@@ -88,7 +88,8 @@
         "map": "cpp",
         "memory_resource": "cpp",
         "random": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "queue": "cpp"
     },
     "workbench.editor.enablePreview": false
 }
