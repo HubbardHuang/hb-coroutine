@@ -9,7 +9,7 @@ namespace hbco {
 CoroutineEnvironment::CoroutineEnvironment() {
     Coroutine* main_co(new Coroutine("main_co"));
     callstack_.push_back(main_co);
-    coroutines_.push_back(main_co);
+    coroutines_.insert({ main_co, true });
     epoll_fd_ = epoll_create1(0);
 }
 
@@ -43,11 +43,17 @@ ReleaseResources(void) {
             auto* co = curr_env->callstack_.back();
             curr_env->callstack_.pop_back();
         }
-        while (!curr_env->coroutines_.empty()) {
-            auto last = curr_env->coroutines_.back();
-            curr_env->coroutines_.pop_back();
-            delete last;
+        for (auto it = curr_env->coroutines_.begin(); it != curr_env->coroutines_.end();) {
+            auto prev = it->first;
+            it = curr_env->coroutines_.erase(it);
+            Display(prev->name_);
+            delete prev;
         }
+        // while (!curr_env->coroutines_.empty()) {
+        //     auto last = curr_env->coroutines_.back();
+        //     curr_env->coroutines_.pop_back();
+        //     delete last;
+        // }
         env_manager.erase(curr_tid);
         delete curr_env;
     }

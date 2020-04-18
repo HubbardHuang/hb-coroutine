@@ -31,7 +31,7 @@ Coroutine::PollTemp(int fd, uint32_t epoll_events) {
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
     curr_env->epoll_items_.insert(curr_co);
 
-    curr_env->pending_.push_back(curr_co);
+    // curr_env->pending_.push_back(curr_co);
     curr_co->sleep_.how_long_ = 1000; // millisecond
     gettimeofday(&(curr_co->sleep_.when_), nullptr);
     Coroutine::Yield();
@@ -76,6 +76,18 @@ Coroutine::Resume(Coroutine* next_co) {
     CurrEnv()->callstack_.pop_back();
 }
 
+void
+Coroutine::Container(CoFunc func, void* arg) {
+    Coroutine* curr_co = CurrCoroutine();
+    curr_co->done_ = false;
+    std::cout << "hi~";
+    Display(curr_co->name_);
+    func(arg);
+    std::cout << "bye~";
+    Display(curr_co->name_);
+    curr_co->done_ = true;
+}
+
 Coroutine*
 Coroutine::Create(const std::string& name, CoFunc func, void* arg) {
     Coroutine* co = new Coroutine(name);
@@ -85,8 +97,8 @@ Coroutine::Create(const std::string& name, CoFunc func, void* arg) {
     co->context_.ctx_.uc_stack.ss_size = sizeof(co->stack_);
     co->context_.ctx_.uc_stack.ss_flags = 0;
     co->context_.ctx_.uc_link = &(CurrEnv()->callstack_.back()->context_.ctx_);
-    makecontext(&co->context_.ctx_, (void (*)(void))func, 1, arg);
-    CurrEnv()->coroutines_.push_back(co);
+    makecontext(&co->context_.ctx_, (void (*)(void))Container, 2, func, arg);
+    CurrEnv()->coroutines_.insert({ co, true });
     return co;
 }
 
@@ -161,6 +173,11 @@ EpollEventLoop(void) {
             Coroutine* co = curr_env->runnable_.front();
             curr_env->runnable_.pop_front();
             Coroutine::Resume(co);
+            if (co->done_) {
+                curr_env->coroutines_.erase(co);
+                Display(co->done_);
+                delete co;
+            }
         }
     }
 

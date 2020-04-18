@@ -1,6 +1,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "coroutine.h"
@@ -26,12 +27,12 @@ socket(int domain, int type, int protocol) {
 
     int flags = fcntl(socket_fd, F_GETFL, 0);
     if (flags == -1) {
-        perror("socket->fcntl");
+        perror("socket->fcntl-get");
         close(socket_fd);
         return -1;
     }
     if (fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-        perror("socket->fnctl");
+        perror("socket->fnctl-set");
         close(socket_fd);
         return -1;
     }
@@ -40,18 +41,26 @@ socket(int domain, int type, int protocol) {
 
 int
 accept(int fd, struct sockaddr* address, socklen_t* length) {
+    std::cout << "hahahaahah" << std::endl;
     hbco::CurrEnv()->accept_cond_.Wait();
     uint32_t epoll_events = EPOLLIN;
-    hbco::Coroutine::PollTemp(fd, epoll_events);
-    int client_fd = g_syscall_accept(fd, address, length);
+    int client_fd = -1;
+    while (true) {
+        hbco::Coroutine::PollTemp(fd, epoll_events);
+        client_fd = g_syscall_accept(fd, address, length);
+        if (client_fd > 0) {
+            break;
+        }
+    }
+    Display(client_fd);
     int flags = fcntl(client_fd, F_GETFL, 0);
     if (flags == -1) {
-        perror("socket->fcntl");
+        perror("accept->fcntl-get");
         close(client_fd);
         return -1;
     }
     if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-        perror("socket->fnctl");
+        perror("accept->fnctl-set");
         close(client_fd);
         return -1;
     }
@@ -61,8 +70,14 @@ accept(int fd, struct sockaddr* address, socklen_t* length) {
 ssize_t
 read(int fd, void* buffer, size_t length) {
     uint32_t epoll_events = EPOLLIN;
-    hbco::Coroutine::PollTemp(fd, epoll_events);
-    ssize_t ret = g_syscall_read(fd, buffer, length);
+    ssize_t ret = -1;
+    while (true) {
+        hbco::Coroutine::PollTemp(fd, epoll_events);
+        ret = g_syscall_read(fd, buffer, length);
+        if (ret >= 0) {
+            break;
+        }
+    }
     return ret;
 }
 

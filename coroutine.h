@@ -34,10 +34,14 @@ class Coroutine {
 private:
     SleepRecord sleep_;
     bool can_run_next_time_;
+    bool done_;
     Context context_;
     char stack_[STACK_SIZE];
     Coroutine(const std::string& name);
     ~Coroutine() = default;
+
+private:
+    static void Container(CoFunc func, void* arg);
 
 #ifdef DEBUG
 public:

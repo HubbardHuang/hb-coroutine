@@ -1,6 +1,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <strings.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "condition_variable.h"
@@ -13,22 +14,25 @@ hbco::CondVar g_accept_cond;
 
 static void
 ServerCoroutine(void* arg) {
+    static int times = 0;
     struct sockaddr_in sa;
     socklen_t len = sizeof(sa);
     char hbuf[INET_ADDRSTRLEN] = { 0 };
     int client_fd = accept(g_listen_fd, (struct sockaddr*)&sa, &len);
     while (true) {
         char buffer[100] = { 0 };
+        ++times;
+        Display(times);
         int read_count = read(client_fd, buffer, sizeof(buffer) / sizeof(buffer[0]));
+        // Display(read_count);
         std::string str(buffer);
-        if (str == "exit\n") {
+        if (str == "exit\n" || read_count == 0) {
             close(client_fd);
+            std::cout << "bye~" << std::endl;
             break;
         }
-        write(client_fd, buffer, read_count);
-        Display(client_fd);
-        Display(read_count);
-        Display(buffer);
+        int write_count = write(client_fd, buffer, read_count);
+        // Display(write_count);
     }
 }
 
@@ -37,7 +41,7 @@ AcceptCoroutine(void* arg) {
     hbco::CoroutineEnvironment* curr_env = hbco::CurrEnv();
     while (true) {
         curr_env->accept_cond_.Signal();
-        hbco::Coroutine::PollTime(1000);
+        hbco::Coroutine::PollTime(2000);
     }
 }
 
@@ -53,6 +57,7 @@ create_and_bind(int port) {
     sa.sin_port = htons(port);
     sa.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sfd, (struct sockaddr*)&sa, sizeof(struct sockaddr)) == -1) {
+        perror("bind");
         return -1;
     }
     return sfd;
@@ -72,10 +77,10 @@ main(int argc, char* argv[]) {
     hbco::Coroutine::Resume(accept_co);
     hbco::Coroutine* server_co1 = hbco::Coroutine::Create("server_co1", ServerCoroutine, nullptr);
     hbco::Coroutine::Resume(server_co1);
-    // hbco::Coroutine* server_co2 = hbco::Coroutine::Create("server_co2", ServerCoroutine,
-    // nullptr); hbco::Coroutine::Resume(server_co2);
+    hbco::Coroutine* server_co2 = hbco::Coroutine::Create("server_co2", ServerCoroutine, nullptr);
+    hbco::Coroutine::Resume(server_co2);
 
-    hbco::EpollEventLoop();
+    // hbco::EpollEventLoop();
 
     return 0;
 }

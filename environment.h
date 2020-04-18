@@ -18,11 +18,12 @@ class CoroutineEnvironment {
     friend CoroutineEnvironment* CurrEnv(void);
     friend Coroutine* CurrCoroutine(void);
     friend void ReleaseResources(void);
+    friend void EpollEventLoop(void);
 
 private:
     int epoll_fd_;
     std::vector<Coroutine*> callstack_;
-    std::vector<Coroutine*> coroutines_;
+    std::map<Coroutine*, bool> coroutines_;
     CoroutineEnvironment();
     ~CoroutineEnvironment() = default;
 
