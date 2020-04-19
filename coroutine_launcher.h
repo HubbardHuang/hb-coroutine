@@ -8,9 +8,10 @@ namespace hbco {
 
 class CoroutineLauncher {
 public:
-    CoroutineLauncher();
+    CoroutineLauncher(int port);
     ~CoroutineLauncher();
 };
-}
+
+} // namespace hbco
 
 #endif

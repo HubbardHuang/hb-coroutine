@@ -21,11 +21,12 @@ struct Context {
     ucontext ctx_;
 };
 
-#define STACK_SIZE 1024 * 128
+#define STACK_SIZE 1024 * 4
+#define MAIN_CO_NAME "main_co"
 
 class Coroutine {
     friend class CondVar;
-    friend void EventLoop(void);
+    friend bool Poll(int fd, uint32_t epoll_events, long wait_time);
     friend void EpollEventLoop(void);
     friend void ReleaseResources(void);
     friend CoroutineEnvironment::CoroutineEnvironment();
@@ -36,9 +37,9 @@ private:
     bool can_run_next_time_;
     bool done_;
     Context context_;
-    char stack_[STACK_SIZE];
+    char* stack_;
     Coroutine(const std::string& name);
-    ~Coroutine() = default;
+    ~Coroutine();
 
 private:
     static void Container(CoFunc func, void* arg);
@@ -51,16 +52,15 @@ private:
     std::string name_;
 
 public:
-    static void PollTemp(int fd, uint32_t epoll_events);
-    static void PollTime(long duration);
+    // static bool Poll(int fd, uint32_t epoll_events, long wait_time = 1000);
+    static void Sleep(long duration);
     static void Yield();
     static void Resume(Coroutine* next_co);
     static Coroutine* Create(const std::string& name, CoFunc func, void* arg);
 };
 
 extern Coroutine* CurrCoroutine(void);
-extern void EventLoop(void);
-extern void EpollEventLoop(void);
+extern int CurrListeningFd(void);
 
 } // namespace hbco
 

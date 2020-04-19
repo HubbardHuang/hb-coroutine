@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <string.h>
 #include <strings.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -7,10 +8,8 @@
 #include "condition_variable.h"
 #include "coroutine.h"
 #include "coroutine_launcher.h"
+#include "event_loop.h"
 #include "log.h"
-
-int g_listen_fd = -1;
-hbco::CondVar g_accept_cond;
 
 static void
 ServerCoroutine(void* arg) {
@@ -18,13 +17,13 @@ ServerCoroutine(void* arg) {
     struct sockaddr_in sa;
     socklen_t len = sizeof(sa);
     char hbuf[INET_ADDRSTRLEN] = { 0 };
-    int client_fd = accept(g_listen_fd, (struct sockaddr*)&sa, &len);
+    int client_fd = accept(hbco::CurrListeningFd(), (struct sockaddr*)&sa, &len);
     while (true) {
         char buffer[100] = { 0 };
         ++times;
         Display(times);
         int read_count = read(client_fd, buffer, sizeof(buffer) / sizeof(buffer[0]));
-        // Display(read_count);
+        Display(read_count);
         std::string str(buffer);
         if (str == "exit\n" || read_count == 0) {
             close(client_fd);
@@ -32,35 +31,21 @@ ServerCoroutine(void* arg) {
             break;
         }
         int write_count = write(client_fd, buffer, read_count);
-        // Display(write_count);
-    }
-}
+        Display(write_count);
 
-static void
-AcceptCoroutine(void* arg) {
-    hbco::CoroutineEnvironment* curr_env = hbco::CurrEnv();
-    while (true) {
-        curr_env->accept_cond_.Signal();
-        hbco::Coroutine::PollTime(2000);
+        // int conn_fd = socket(AF_INET, SOCK_STREAM, 0);
+        // //向服务器（特定的IP和端口）发起请求
+        // struct sockaddr_in serv_addr;
+        // memset(&serv_addr, 0, sizeof(serv_addr));           //每个字节都用0填充
+        // serv_addr.sin_family = AF_INET;                     //使用IPv4地址
+        // serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //具体的IP地址
+        // serv_addr.sin_port = htons(9500);                   //端口
+        // connect(conn_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+        // char buf[50] = { 0 };
+        // read_count = read(conn_fd, buf, sizeof(buf) / sizeof(buf[0]));
+        // Display(buf);
+        // write(conn_fd, buf, read_count);
     }
-}
-
-static int
-create_and_bind(int port) {
-    int sfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (sfd == -1) {
-        return -1;
-    }
-    struct sockaddr_in sa;
-    bzero(&sa, sizeof(sa));
-    sa.sin_family = AF_INET;
-    sa.sin_port = htons(port);
-    sa.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(sfd, (struct sockaddr*)&sa, sizeof(struct sockaddr)) == -1) {
-        perror("bind");
-        return -1;
-    }
-    return sfd;
 }
 
 int
@@ -69,18 +54,15 @@ main(int argc, char* argv[]) {
         exit(-1);
     }
     int port = atoi(argv[1]);
-    g_listen_fd = create_and_bind(port);
-    listen(g_listen_fd, SOMAXCONN);
 
-    hbco::CoroutineLauncher cl;
-    hbco::Coroutine* accept_co = hbco::Coroutine::Create("accept_co", AcceptCoroutine, nullptr);
-    hbco::Coroutine::Resume(accept_co);
+    hbco::CoroutineLauncher cl(port);
+
     hbco::Coroutine* server_co1 = hbco::Coroutine::Create("server_co1", ServerCoroutine, nullptr);
     hbco::Coroutine::Resume(server_co1);
     hbco::Coroutine* server_co2 = hbco::Coroutine::Create("server_co2", ServerCoroutine, nullptr);
     hbco::Coroutine::Resume(server_co2);
 
-    // hbco::EpollEventLoop();
+    hbco::EpollEventLoop();
 
     return 0;
 }

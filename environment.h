@@ -21,11 +21,13 @@ class CoroutineEnvironment {
     friend void EpollEventLoop(void);
 
 private:
+    int listen_fd_;
+    int port_;
     int epoll_fd_;
     std::vector<Coroutine*> callstack_;
     std::map<Coroutine*, bool> coroutines_;
     CoroutineEnvironment();
-    ~CoroutineEnvironment() = default;
+    ~CoroutineEnvironment();
 
 public:
     CondVar accept_cond_;
@@ -33,6 +35,7 @@ public:
     std::list<Coroutine*> runnable_;
     std::set<Coroutine*> epoll_items_;
     int GetEpollFd(void);
+    int GetListeningFd(void);
 };
 
 extern CoroutineEnvironment* CurrEnv(void);
