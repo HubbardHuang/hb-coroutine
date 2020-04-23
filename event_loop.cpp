@@ -3,6 +3,7 @@
 
 #include "coroutine.h"
 #include "event_loop.h"
+#include "global.h"
 #include "log.h"
 #include "time_record.h"
 
@@ -77,6 +78,22 @@ EpollEventLoop(void) {
             } else {
                 i++;
             }
+        }
+        struct timeval ctv;
+        gettimeofday(&ctv, nullptr);
+        static long mmm;
+        static long long total_count;
+        if (ctv.tv_sec >= gTime.tv_sec + 1) {
+            // Display(gCount);
+            mmm++;
+            gTime.tv_sec = ctv.tv_sec;
+            gTime.tv_usec = ctv.tv_usec;
+            total_count += gCount;
+            gMaxCount = gCount > gMaxCount ? gCount : gMaxCount;
+            if ((mmm % 10) == 0) {
+                printf("IO Count: Curr %ld, Max %ld\n", (long)(gCount / 10), gMaxCount);
+            }
+            gCount = 0;
         }
         while (!curr_env->runnable_.empty()) {
             Coroutine* co = curr_env->runnable_.front();

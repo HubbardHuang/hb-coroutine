@@ -72,7 +72,6 @@ Coroutine::Container(void* arg) {
     // Display(curr_co->name_);
     CoArg* co_arg = reinterpret_cast<CoArg*>(arg);
     co_arg->func_(co_arg->arg_);
-    std::cout << "bye~";
     Display(curr_co->name_);
     curr_co->done_ = true;
 

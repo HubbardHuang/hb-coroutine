@@ -46,7 +46,7 @@ socket(int domain, int type, int protocol) {
 int
 accept(int fd, struct sockaddr* address, socklen_t* length) {
     // std::cout << "hahahaahah" << std::endl;
-    printf("hahahaahah");
+    // printf("hahahaahah");
     hbco::CurrEnv()->accept_cond_.Wait();
     uint32_t epoll_events = EPOLLIN;
     int client_fd = -1;
@@ -92,6 +92,9 @@ connect(int fd, const struct sockaddr* address, socklen_t address_length) {
 
 ssize_t
 read(int fd, void* buffer, size_t length) {
+    if (fd != hbco::CurrListeningFd()) {
+        return g_syscall_read(fd, buffer, length);
+    }
     uint32_t epoll_events = EPOLLIN;
     ssize_t ret = -1;
     while (true) {
@@ -106,6 +109,9 @@ read(int fd, void* buffer, size_t length) {
 
 ssize_t
 write(int fd, const void* buffer, size_t length) {
+    if (fd != hbco::CurrListeningFd()) {
+        return g_syscall_write(fd, (const char*)buffer, length);
+    }
     uint32_t epoll_events = EPOLLOUT;
     size_t wrote_length = 0;
     while (wrote_length < length) {
