@@ -8,7 +8,8 @@ namespace hbco {
 
 class CoroutineLauncher {
 public:
-    CoroutineLauncher(int port);
+    CoroutineLauncher() = delete;
+    CoroutineLauncher(int port = -1);
     ~CoroutineLauncher();
 };
 

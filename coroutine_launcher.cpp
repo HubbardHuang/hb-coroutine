@@ -15,6 +15,9 @@ AcceptCoroutine(void* arg) {
 
 CoroutineLauncher::CoroutineLauncher(int port) {
     SetPort(port);
+    if (port < 0) {
+        return;
+    }
     hbco::Coroutine* accept_co = hbco::Coroutine::Create("accept_co", AcceptCoroutine, nullptr);
     hbco::Coroutine::Resume(accept_co);
 }

@@ -1,5 +1,6 @@
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -44,7 +45,8 @@ socket(int domain, int type, int protocol) {
 
 int
 accept(int fd, struct sockaddr* address, socklen_t* length) {
-    std::cout << "hahahaahah" << std::endl;
+    // std::cout << "hahahaahah" << std::endl;
+    printf("hahahaahah");
     hbco::CurrEnv()->accept_cond_.Wait();
     uint32_t epoll_events = EPOLLIN;
     int client_fd = -1;

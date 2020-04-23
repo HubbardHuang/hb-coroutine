@@ -17,13 +17,10 @@ namespace hbco {
 
 typedef void (*CoFunc)(void*);
 
-struct Context {
-    ucontext ctx_;
-};
-
-#define STACK_SIZE 1024 * 4
+#define STACK_SIZE 1024 * 128
 #define MAIN_CO_NAME "main_co"
 
+struct Context;
 class Coroutine {
     friend class CondVar;
     friend bool Poll(int fd, uint32_t epoll_events, long wait_time);
@@ -36,13 +33,12 @@ private:
     SleepRecord sleep_;
     bool can_run_next_time_;
     bool done_;
-    Context context_;
     char* stack_;
     Coroutine(const std::string& name);
     ~Coroutine();
 
 private:
-    static void Container(CoFunc func, void* arg);
+    static void Container(void* arg);
 
 #ifdef DEBUG
 public:
@@ -50,6 +46,8 @@ public:
 private:
 #endif
     std::string name_;
+    Context* context_;
+    ucontext uctx_;
 
 public:
     // static bool Poll(int fd, uint32_t epoll_events, long wait_time = 1000);
