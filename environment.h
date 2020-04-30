@@ -5,6 +5,7 @@
 #include <map>
 #include <pthread.h>
 #include <set>
+#include <unordered_map>
 #include <vector>
 
 #include "condition_variable.h"
@@ -33,7 +34,7 @@ public:
     CondVar accept_cond_;
     std::list<Coroutine*> pending_;
     std::list<Coroutine*> runnable_;
-    std::set<Coroutine*> epoll_items_;
+    std::unordered_map<Coroutine*, bool> epoll_items_;
     int GetEpollFd(void);
     int GetListeningFd(void);
 };

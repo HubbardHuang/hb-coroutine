@@ -6,6 +6,9 @@ namespace hbco {
 
 void
 CondVar::Signal(void) {
+    if (pending_.empty()) {
+        return;
+    }
     CoroutineEnvironment* curr_env = CurrEnv();
     struct timeval curr_tv;
     gettimeofday(&curr_tv, nullptr);

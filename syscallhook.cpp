@@ -8,6 +8,7 @@
 #include "coroutine.h"
 #include "environment.h"
 #include "event_loop.h"
+#include "global.h"
 #include "log.h"
 
 using SocketFunc = int(int, int, int);
@@ -45,8 +46,6 @@ socket(int domain, int type, int protocol) {
 
 int
 accept(int fd, struct sockaddr* address, socklen_t* length) {
-    // std::cout << "hahahaahah" << std::endl;
-    // printf("hahahaahah");
     hbco::CurrEnv()->accept_cond_.Wait();
     uint32_t epoll_events = EPOLLIN;
     int client_fd = -1;
@@ -65,7 +64,9 @@ accept(int fd, struct sockaddr* address, socklen_t* length) {
         close(client_fd);
         return -1;
     }
-    if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+    flags |= O_NDELAY;
+    flags |= O_NONBLOCK;
+    if (fcntl(client_fd, F_SETFL, flags) == -1) {
         perror("accept->fnctl-set");
         close(client_fd);
         return -1;
@@ -92,9 +93,9 @@ connect(int fd, const struct sockaddr* address, socklen_t address_length) {
 
 ssize_t
 read(int fd, void* buffer, size_t length) {
-    if (fd != hbco::CurrListeningFd()) {
-        return g_syscall_read(fd, buffer, length);
-    }
+    // if (fd != hbco::CurrListeningFd()) {
+    //     return g_syscall_read(fd, buffer, length);
+    // }
     uint32_t epoll_events = EPOLLIN;
     ssize_t ret = -1;
     while (true) {
@@ -104,14 +105,16 @@ read(int fd, void* buffer, size_t length) {
         }
     }
     ret = g_syscall_read(fd, buffer, length);
+    gCount++;
+    hbco::CurrCoroutine()->io_count_++;
     return ret;
 }
 
 ssize_t
 write(int fd, const void* buffer, size_t length) {
-    if (fd != hbco::CurrListeningFd()) {
-        return g_syscall_write(fd, (const char*)buffer, length);
-    }
+    // if (fd != hbco::CurrListeningFd()) {
+    //     return g_syscall_write(fd, (const char*)buffer, length);
+    // }
     uint32_t epoll_events = EPOLLOUT;
     size_t wrote_length = 0;
     while (wrote_length < length) {
@@ -122,5 +125,7 @@ write(int fd, const void* buffer, size_t length) {
         }
         wrote_length += ret;
     }
+    ++gCount;
+    hbco::CurrCoroutine()->io_count_++;
     return wrote_length;
 }

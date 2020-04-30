@@ -19,6 +19,7 @@ Coroutine::Coroutine(const std::string& name)
   : name_(name) {
     sleep_.how_long_ = -1;
     memset(&sleep_.when_, sizeof(timeval), 0);
+    io_count_ = 0;
     stack_ = (name == MAIN_CO_NAME) ? nullptr : (new char[STACK_SIZE]);
     context_ = new Context();
 }
@@ -45,11 +46,12 @@ Coroutine::Yield() {
     if (CurrEnv()->callstack_.size() == 1) {
         return;
     }
-    Coroutine* curr_co = CurrEnv()->callstack_.back();
+    CoroutineEnvironment* curr_env = CurrEnv();
+    Coroutine* curr_co = curr_env->callstack_.back();
     curr_co->can_run_next_time_ = true;
-    CurrEnv()->callstack_.pop_back();
-    Coroutine* prev_co = CurrEnv()->callstack_.back();
-    CurrEnv()->callstack_.push_back(curr_co);
+    curr_env->callstack_.pop_back();
+    Coroutine* prev_co = curr_env->callstack_.back();
+    curr_env->callstack_.push_back(curr_co);
     SwapContext(curr_co->context_, prev_co->context_);
     curr_co->can_run_next_time_ = false;
 }
@@ -59,10 +61,11 @@ Coroutine::Resume(Coroutine* next_co) {
     if (next_co->can_run_next_time_ == false) {
         return;
     }
-    auto curr_co = CurrEnv()->callstack_.back();
-    CurrEnv()->callstack_.push_back(next_co);
+    auto curr_env = CurrEnv();
+    auto curr_co = curr_env->callstack_.back();
+    curr_env->callstack_.push_back(next_co);
     SwapContext(curr_co->context_, next_co->context_);
-    CurrEnv()->callstack_.pop_back();
+    curr_env->callstack_.pop_back();
 }
 
 void

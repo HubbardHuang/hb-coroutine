@@ -29,7 +29,8 @@ Poll(int fd, uint32_t epoll_events, long wait_time) {
     event.events = epoll_events;
     event.data.ptr = reinterpret_cast<void*>(&ed);
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
-    curr_env->epoll_items_.insert(curr_co);
+    // curr_env->epoll_items_.insert(curr_co);
+    curr_env->epoll_items_.insert({ curr_co, true });
 
     curr_co->sleep_.how_long_ = wait_time; // millisecond
     gettimeofday(&(curr_co->sleep_.when_), nullptr);
@@ -45,8 +46,8 @@ void
 EpollEventLoop(void) {
     CoroutineEnvironment* curr_env = CurrEnv();
     int epoll_fd = curr_env->GetEpollFd();
-    epoll_event result_events[100] = { 0 };
     while (true) {
+        epoll_event result_events[1000] = { 0 };
         int nfds =
           epoll_wait(epoll_fd, result_events, sizeof(result_events) / sizeof(result_events[0]), 1);
         for (int i = 0; i < nfds; i++) {
@@ -60,7 +61,8 @@ EpollEventLoop(void) {
         gettimeofday(&curr_tv, nullptr);
         long curr_time = curr_tv.tv_sec * 1000 + curr_tv.tv_usec / 1000;
         for (auto i = curr_env->epoll_items_.begin(); i != curr_env->epoll_items_.end();) {
-            Coroutine* co = *i;
+            // Coroutine* co = *i;
+            Coroutine* co = i->first;
             long ms_timestamp = co->sleep_.when_.tv_sec * 1000 + co->sleep_.when_.tv_usec / 1000;
             if (co->sleep_.how_long_ < 0 || ms_timestamp + co->sleep_.how_long_ <= curr_time) {
                 curr_env->runnable_.push_back(co);
@@ -79,22 +81,6 @@ EpollEventLoop(void) {
                 i++;
             }
         }
-        struct timeval ctv;
-        gettimeofday(&ctv, nullptr);
-        static long mmm;
-        static long long total_count;
-        if (ctv.tv_sec >= gTime.tv_sec + 1) {
-            // Display(gCount);
-            mmm++;
-            gTime.tv_sec = ctv.tv_sec;
-            gTime.tv_usec = ctv.tv_usec;
-            total_count += gCount;
-            gMaxCount = gCount > gMaxCount ? gCount : gMaxCount;
-            if ((mmm % 10) == 0) {
-                printf("IO Count: Curr %ld, Max %ld\n", (long)(gCount / 10), gMaxCount);
-            }
-            gCount = 0;
-        }
         while (!curr_env->runnable_.empty()) {
             Coroutine* co = curr_env->runnable_.front();
             curr_env->runnable_.pop_front();
@@ -104,6 +90,22 @@ EpollEventLoop(void) {
                 Display(co->done_);
                 delete co;
             }
+        }
+        struct timeval ctv;
+        static long long total_count;
+        gettimeofday(&ctv, nullptr);
+        if (ctv.tv_sec >= gTime.tv_sec + 1) {
+            gTime.tv_sec = ctv.tv_sec;
+            gTime.tv_usec = ctv.tv_usec;
+            gMaxCount = gCount > gMaxCount ? gCount : gMaxCount;
+            total_count += gCount;
+            printf("IO Count: Curr %lld, Max %lld, Total %lld\n", gCount, gMaxCount, total_count);
+            for (auto i : curr_env->coroutines_) {
+                auto co = i.first;
+                // std::cout << co->name_ << ": " << co->io_count_ << std::endl;
+                co->io_count_ = 0;
+            }
+            gCount = 0;
         }
     }
 }

@@ -56,7 +56,7 @@ CoroutineEnvironment::GetListeningFd(void) {
     return listen_fd_;
 }
 
-static std::map<pthread_t, CoroutineEnvironment*> env_manager;
+static std::unordered_map<pthread_t, CoroutineEnvironment*> env_manager;
 
 CoroutineEnvironment*
 CurrEnv(void) {
@@ -65,8 +65,10 @@ CurrEnv(void) {
     if (result == env_manager.end()) {
         CoroutineEnvironment* curr_env = new CoroutineEnvironment();
         env_manager.insert({ curr_tid, curr_env });
+        return curr_env;
     }
-    return env_manager[curr_tid];
+    // return env_manager[curr_tid];
+    return result->second;
 }
 
 void

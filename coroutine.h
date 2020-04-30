@@ -48,6 +48,7 @@ private:
     std::string name_;
     Context* context_;
     ucontext uctx_;
+    long long io_count_;
 
 public:
     // static bool Poll(int fd, uint32_t epoll_events, long wait_time = 1000);

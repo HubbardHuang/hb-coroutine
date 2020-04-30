@@ -21,19 +21,16 @@ ServerCoroutine(void* arg) {
     int client_fd = accept(hbco::CurrListeningFd(), (struct sockaddr*)&sa, &len);
     while (true) {
         char buffer[100] = { 0 };
-        // ++times;
-        // Display(times);
         int read_count = read(client_fd, buffer, sizeof(buffer) / sizeof(buffer[0]));
-        // Display(read_count);
-        // std::string str(buffer);
-        if (/*str == "exit\n" ||*/ read_count == 0) {
+        if (read_count == 0) {
             close(client_fd);
-            // std::cout << "bye~" << std::endl;
             break;
         }
+        uint64_t res = 0;
+        for (uint64_t i = 0; i < 6000; i++) {
+            res++;
+        }
         int write_count = write(client_fd, buffer, read_count);
-        gCount += 2;
-        // Display(write_count);
 
         // int conn_fd = socket(AF_INET, SOCK_STREAM, 0);
         // //向服务器（特定的IP和端口）发起请求
@@ -61,25 +58,23 @@ main(int argc, char* argv[]) {
     pid_t pid = getpid();
     Display(pid);
 
-    int file_fd = open("/home/hhb/practice/hb-coroutine/tmp.txt", O_RDWR | O_APPEND);
-    write(file_fd, "qqqqqqqqqqqqqqqqqqqqqqqqqq\n", 28);
-    lseek(file_fd, 0, 0);
-    char buf[1000] = { 0 };
-    int read_ret = read(file_fd, buf, 1000);
-    Display(buf);
+    // int file_fd = open("/home/hhb/practice/hb-coroutine/tmp.txt", O_RDWR | O_APPEND);
+    // write(file_fd, "qqqqqqqqqqqqqqqqqqqqqqqqqq\n", 28);
+    // lseek(file_fd, 0, 0);
+    // char buf[1000] = { 0 };
+    // int read_ret = read(file_fd, buf, 1000);
+    // Display(buf);
 
-    // hbco::CoroutineLauncher cl(port);
+    hbco::CoroutineLauncher cl(port);
 
-    // gettimeofday(&gTime, nullptr);
-    // for (uint64_t i = 0; i < 7; i++) {
-    //     hbco::Coroutine* server_co =
-    //       hbco::Coroutine::Create("server_co_" + std::to_string(i), ServerCoroutine, nullptr);
-    //     hbco::Coroutine::Resume(server_co);
-    // }
-    // // hbco::Coroutine* server_co2 = hbco::Coroutine::Create("server_co2", ServerCoroutine,
-    // // nullptr); hbco::Coroutine::Resume(server_co2);
+    gettimeofday(&gTime, nullptr);
+    for (uint64_t i = 0; i < 50; i++) {
+        hbco::Coroutine* server_co =
+          hbco::Coroutine::Create("server_co_" + std::to_string(i), ServerCoroutine, nullptr);
+        hbco::Coroutine::Resume(server_co);
+    }
 
-    // hbco::EpollEventLoop();
+    hbco::EpollEventLoop();
 
     return 0;
 }
