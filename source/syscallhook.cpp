@@ -56,7 +56,6 @@ accept(int fd, struct sockaddr* address, socklen_t* length) {
         }
     }
     client_fd = g_syscall_accept(fd, address, length);
-
     Display(client_fd);
     int flags = fcntl(client_fd, F_GETFL, 0);
     if (flags == -1) {
@@ -83,7 +82,7 @@ connect(int fd, const struct sockaddr* address, socklen_t address_length) {
     uint32_t epoll_events = EPOLLOUT;
     bool time_out = true;
     for (int i = 0; i < 75; i++) {
-        time_out = hbco::Poll(fd, epoll_events);
+        time_out = hbco::Poll(fd, epoll_events, 1000);
         if (!time_out) {
             break;
         }
@@ -96,17 +95,17 @@ read(int fd, void* buffer, size_t length) {
     // if (fd != hbco::CurrListeningFd()) {
     //     return g_syscall_read(fd, buffer, length);
     // }
-    uint32_t epoll_events = EPOLLIN;
+    uint32_t epoll_events = EPOLLIN | EPOLLET;
     ssize_t ret = -1;
-    while (true) {
-        bool time_out = hbco::Poll(fd, epoll_events);
-        if (!time_out) {
-            break;
-        }
-    }
+    // while (true) {
+    bool time_out = hbco::Poll(fd, epoll_events, 1000);
+    //     if (!time_out) {
+    //         break;
+    //     }
+    // }
     ret = g_syscall_read(fd, buffer, length);
     gCount++;
-    hbco::CurrCoroutine()->io_count_++;
+
     return ret;
 }
 
@@ -115,7 +114,7 @@ write(int fd, const void* buffer, size_t length) {
     // if (fd != hbco::CurrListeningFd()) {
     //     return g_syscall_write(fd, (const char*)buffer, length);
     // }
-    uint32_t epoll_events = EPOLLOUT;
+    uint32_t epoll_events = EPOLLOUT | EPOLLET;
     size_t wrote_length = 0;
     while (wrote_length < length) {
         hbco::Poll(fd, epoll_events);
@@ -125,7 +124,10 @@ write(int fd, const void* buffer, size_t length) {
         }
         wrote_length += ret;
     }
-    ++gCount;
-    hbco::CurrCoroutine()->io_count_++;
+    // pthread_mutex_lock(&gCountMutex);
+    gCount++;
+    // pthread_mutex_unlock(&gCountMutex);
+
+    // hbco::CurrCoroutine()->io_count_++;
     return wrote_length;
 }

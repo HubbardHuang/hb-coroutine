@@ -30,10 +30,12 @@ Poll(int fd, uint32_t epoll_events, long wait_time) {
     event.data.ptr = reinterpret_cast<void*>(&ed);
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
     // curr_env->epoll_items_.insert(curr_co);
-    curr_env->epoll_items_.insert({ curr_co, true });
+    curr_env->epoll_items_.insert({ curr_co, &event });
 
     curr_co->sleep_.how_long_ = wait_time; // millisecond
     gettimeofday(&(curr_co->sleep_.when_), nullptr);
+    curr_co->sleep_.wake_time_ = curr_co->sleep_.how_long_ + curr_co->sleep_.when_.tv_sec * 1000 +
+                                 curr_co->sleep_.when_.tv_usec / 1000;
     Coroutine::Yield();
 
     curr_co->sleep_.how_long_ = -1;
@@ -63,18 +65,22 @@ EpollEventLoop(void) {
         for (auto i = curr_env->epoll_items_.begin(); i != curr_env->epoll_items_.end();) {
             // Coroutine* co = *i;
             Coroutine* co = i->first;
-            long ms_timestamp = co->sleep_.when_.tv_sec * 1000 + co->sleep_.when_.tv_usec / 1000;
-            if (co->sleep_.how_long_ < 0 || ms_timestamp + co->sleep_.how_long_ <= curr_time) {
+            // long ms_timestamp = co->sleep_.when_.tv_sec * 1000 + co->sleep_.when_.tv_usec / 1000;
+            // if (co->sleep_.how_long_ < 0 || ms_timestamp + co->sleep_.how_long_ <= curr_time) {
+            if (co->sleep_.wake_time_ < curr_time) {
                 curr_env->runnable_.push_back(co);
                 i = curr_env->epoll_items_.erase(i);
             } else {
+                EpollData* ed = reinterpret_cast<EpollData*>(i->second->data.ptr);
+                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, ed->fd_, i->second);
                 i++;
             }
         }
         for (auto i = curr_env->pending_.begin(); i != curr_env->pending_.end();) {
             Coroutine* co = *i;
-            long ms_timestamp = co->sleep_.when_.tv_sec * 1000 + co->sleep_.when_.tv_usec / 1000;
-            if (co->sleep_.how_long_ < 0 || ms_timestamp + co->sleep_.how_long_ <= curr_time) {
+            // long ms_timestamp = co->sleep_.when_.tv_sec * 1000 + co->sleep_.when_.tv_usec / 1000;
+            // if (co->sleep_.how_long_ < 0 || ms_timestamp + co->sleep_.how_long_ <= curr_time) {
+            if (co->sleep_.wake_time_ < curr_time) {
                 curr_env->runnable_.push_back(co);
                 i = curr_env->pending_.erase(i);
             } else {
@@ -85,11 +91,11 @@ EpollEventLoop(void) {
             Coroutine* co = curr_env->runnable_.front();
             curr_env->runnable_.pop_front();
             Coroutine::Resume(co);
-            if (co->done_) {
-                curr_env->coroutines_.erase(co);
-                Display(co->done_);
-                delete co;
-            }
+            // if (co->done_) {
+            // curr_env->coroutines_.erase(co);
+            // Display(co->done_);
+            // delete co;
+            // }
         }
         struct timeval ctv;
         static long long total_count;
@@ -99,13 +105,16 @@ EpollEventLoop(void) {
             gTime.tv_usec = ctv.tv_usec;
             gMaxCount = gCount > gMaxCount ? gCount : gMaxCount;
             total_count += gCount;
-            printf("IO Count: Curr %lld, Max %lld, Total %lld\n", gCount, gMaxCount, total_count);
-            for (auto i : curr_env->coroutines_) {
-                auto co = i.first;
-                // std::cout << co->name_ << ": " << co->io_count_ << std::endl;
-                co->io_count_ = 0;
-            }
+            printf("%d 个协程的每秒 IO 读写数: 当前 %lld, 最大值 %lld\n", _coroutine_amount, gCount,
+                   gMaxCount);
+            // for (auto i : curr_env->coroutines_) {
+            //     auto co = i.first;
+            //     std::cout << co->name_ << ": " << co->io_count_ << std::endl;
+            //     co->io_count_ = 0;
+            // }
+            // pthread_mutex_lock(&gCountMutex);
             gCount = 0;
+            // pthread_mutex_unlock(&gCountMutex);
         }
     }
 }

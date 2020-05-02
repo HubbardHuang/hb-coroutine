@@ -36,6 +36,9 @@ CoroutineEnvironment::CoroutineEnvironment() {
     epoll_fd_ = epoll_create1(0);
     port_ = CurrListeningPort();
     listen_fd_ = port_ > 0 ? create_and_bind(port_) : -1;
+    int opt = 1;
+    // sockfd为需要端口复用的套接字
+    setsockopt(listen_fd_, SOL_SOCKET, SO_REUSEADDR, (const void*)&opt, sizeof(opt));
     if (listen_fd_ > 0) {
         listen(listen_fd_, SOMAXCONN);
     }
@@ -60,6 +63,8 @@ static std::unordered_map<pthread_t, CoroutineEnvironment*> env_manager;
 
 CoroutineEnvironment*
 CurrEnv(void) {
+    // static CoroutineEnvironment env;
+    // return &env;
     auto curr_tid = pthread_self();
     auto result = env_manager.find(curr_tid);
     if (result == env_manager.end()) {
@@ -73,25 +78,25 @@ CurrEnv(void) {
 
 void
 ReleaseResources(void) {
-    auto curr_tid = pthread_self();
-    auto result = env_manager.find(curr_tid);
-    if (result != env_manager.end()) {
-        auto curr_env = result->second;
-        Display(curr_env->callstack_.size());
-        while (!curr_env->callstack_.empty()) {
-            Display(curr_env->callstack_.back()->name_);
-            auto* co = curr_env->callstack_.back();
-            curr_env->callstack_.pop_back();
-        }
-        for (auto it = curr_env->coroutines_.begin(); it != curr_env->coroutines_.end();) {
-            auto prev = it->first;
-            it = curr_env->coroutines_.erase(it);
-            Display(prev->name_);
-            delete prev;
-        }
-        env_manager.erase(curr_tid);
-        delete curr_env;
-    }
+    // auto curr_tid = pthread_self();
+    // auto result = env_manager.find(curr_tid);
+    // if (result != env_manager.end()) {
+    //     auto curr_env = result->second;
+    //     Display(curr_env->callstack_.size());
+    //     while (!curr_env->callstack_.empty()) {
+    //         Display(curr_env->callstack_.back()->name_);
+    //         auto* co = curr_env->callstack_.back();
+    //         curr_env->callstack_.pop_back();
+    //     }
+    //     for (auto it = curr_env->coroutines_.begin(); it != curr_env->coroutines_.end();) {
+    //         auto prev = it->first;
+    //         it = curr_env->coroutines_.erase(it);
+    //         Display(prev->name_);
+    //         delete prev;
+    //     }
+    //     env_manager.erase(curr_tid);
+    //     delete curr_env;
+    // }
 }
 
 } // namespace hbco

@@ -7,8 +7,7 @@
 #ifdef DEBUG
 #define Display(x)                                                                                 \
     do {                                                                                           \
-        std::cout << "[./" << __FILE__ << ":" << __LINE__ << "]" << #x << ": " << (x)              \
-                  << std::endl;                                                                    \
+        std::cout << "[" __FILE__ << ":" << __LINE__ << "]" << #x << ": " << (x) << std::endl;     \
     } while (false)
 #else
 #define Display(x)

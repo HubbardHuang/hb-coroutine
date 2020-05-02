@@ -30,6 +30,7 @@ class Coroutine {
     friend CoroutineEnvironment* CurrEnv(void);
 
 private:
+    CoroutineEnvironment* env_;
     SleepRecord sleep_;
     bool can_run_next_time_;
     bool done_;

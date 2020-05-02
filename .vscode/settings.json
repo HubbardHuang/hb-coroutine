@@ -91,5 +91,6 @@
         "string": "cpp",
         "queue": "cpp"
     },
-    "workbench.editor.enablePreview": false
+    "workbench.editor.enablePreview": false,
+    "shellformat.path": "/home/hhb/.vscode-server/extensions/foxundermoon.shell-format-7.0.1/bin/shfmt_v3.0.1_linux_amd64"
 }

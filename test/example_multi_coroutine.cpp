@@ -14,10 +14,8 @@
 
 static void
 ServerCoroutine(void* arg) {
-    static uint64_t times = 0;
     struct sockaddr_in sa;
     socklen_t len = sizeof(sa);
-    char hbuf[INET_ADDRSTRLEN] = { 0 };
     int client_fd = accept(hbco::CurrListeningFd(), (struct sockaddr*)&sa, &len);
     while (true) {
         char buffer[100] = { 0 };
@@ -26,11 +24,15 @@ ServerCoroutine(void* arg) {
             close(client_fd);
             break;
         }
-        uint64_t res = 0;
-        for (uint64_t i = 0; i < 6000; i++) {
-            res++;
+
+        std::string s(buffer);
+        for (int i = 0; i < 1000; i++) {
+            s.push_back('a');
         }
-        int write_count = write(client_fd, buffer, read_count);
+        int written_count = write(client_fd, s.data(), s.size());
+        if (written_count < 0) {
+            perror("write");
+        }
 
         // int conn_fd = socket(AF_INET, SOCK_STREAM, 0);
         // //向服务器（特定的IP和端口）发起请求
@@ -50,25 +52,14 @@ ServerCoroutine(void* arg) {
 
 int
 main(int argc, char* argv[]) {
-    if (argc < 2) {
-        exit(-1);
-    }
-    int port = atoi(argv[1]);
-    Display(port);
-    pid_t pid = getpid();
-    Display(pid);
+    gPort = _port;
+    Display(_coroutine_amount);
+    Display(_port);
 
-    // int file_fd = open("/home/hhb/practice/hb-coroutine/tmp.txt", O_RDWR | O_APPEND);
-    // write(file_fd, "qqqqqqqqqqqqqqqqqqqqqqqqqq\n", 28);
-    // lseek(file_fd, 0, 0);
-    // char buf[1000] = { 0 };
-    // int read_ret = read(file_fd, buf, 1000);
-    // Display(buf);
-
-    hbco::CoroutineLauncher cl(port);
+    hbco::CoroutineLauncher cl(gPort);
 
     gettimeofday(&gTime, nullptr);
-    for (uint64_t i = 0; i < 50; i++) {
+    for (uint64_t i = 0; i < _coroutine_amount; i++) {
         hbco::Coroutine* server_co =
           hbco::Coroutine::Create("server_co_" + std::to_string(i), ServerCoroutine, nullptr);
         hbco::Coroutine::Resume(server_co);

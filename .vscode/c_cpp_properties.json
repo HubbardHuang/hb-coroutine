@@ -2,12 +2,19 @@
     "configurations": [
         {
             "defines": [
-                "DEBUG"
+                "DEBUG",
+                "_thread_amount",
+                "_port",
+                "_coroutine_amount",
+                "_file_path"
             ],
             "intelliSenseMode": "gcc-x64",
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c11",
-            "cppStandard": "c++17"
+            "cppStandard": "c++17",
+            "includePath": [
+                "${workspaceFolder}/source"
+            ]
         }
     ],
     "version": 4

@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <sys/epoll.h>
+
 #include "condition_variable.h"
 
 namespace hbco {
@@ -16,6 +18,7 @@ class Coroutine;
 class CoroutineEnvironment {
     friend class Coroutine;
     friend class CondVar;
+    friend class CoroutineLauncher;
     friend CoroutineEnvironment* CurrEnv(void);
     friend Coroutine* CurrCoroutine(void);
     friend void ReleaseResources(void);
@@ -34,7 +37,7 @@ public:
     CondVar accept_cond_;
     std::list<Coroutine*> pending_;
     std::list<Coroutine*> runnable_;
-    std::unordered_map<Coroutine*, bool> epoll_items_;
+    std::unordered_map<Coroutine*, struct epoll_event*> epoll_items_;
     int GetEpollFd(void);
     int GetListeningFd(void);
 };
