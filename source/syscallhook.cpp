@@ -1,3 +1,5 @@
+#include <bitset>
+
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -11,6 +13,8 @@
 #include "global.h"
 #include "log.h"
 
+static std::bitset<1000> can_use_syscall_hook;
+
 using SocketFunc = int(int, int, int);
 static SocketFunc* g_syscall_socket = reinterpret_cast<SocketFunc*>(dlsym(RTLD_NEXT, "socket"));
 using AcceptFunc = int(int, struct sockaddr*, socklen_t*);
@@ -21,6 +25,12 @@ using ReadFunc = ssize_t(int, void*, size_t);
 static ReadFunc* g_syscall_read = reinterpret_cast<ReadFunc*>(dlsym(RTLD_NEXT, "read"));
 using WriteFunc = ssize_t(int, const void*, size_t);
 static WriteFunc* g_syscall_write = reinterpret_cast<WriteFunc*>(dlsym(RTLD_NEXT, "write"));
+using RecvFunc = ssize_t(int, void*, size_t, int);
+static RecvFunc* g_syscall_recv = reinterpret_cast<RecvFunc*>(dlsym(RTLD_NEXT, "recv"));
+using SendFunc = ssize_t(int, const void*, size_t, int);
+static SendFunc* g_syscall_send = reinterpret_cast<SendFunc*>(dlsym(RTLD_NEXT, "send"));
+using CloseFunc = int(int);
+static CloseFunc* g_syscall_close = reinterpret_cast<CloseFunc*>(dlsym(RTLD_NEXT, "close"));
 
 int
 socket(int domain, int type, int protocol) {
@@ -41,6 +51,7 @@ socket(int domain, int type, int protocol) {
         close(socket_fd);
         return -1;
     }
+    can_use_syscall_hook.set(socket_fd);
     return socket_fd;
 }
 
@@ -70,6 +81,7 @@ accept(int fd, struct sockaddr* address, socklen_t* length) {
         close(client_fd);
         return -1;
     }
+    can_use_syscall_hook.set(client_fd);
     return client_fd;
 }
 
@@ -81,8 +93,11 @@ connect(int fd, const struct sockaddr* address, socklen_t address_length) {
     }
     uint32_t epoll_events = EPOLLOUT;
     bool time_out = true;
-    for (int i = 0; i < 75; i++) {
-        time_out = hbco::Poll(fd, epoll_events, 1000);
+    long max_time = 750000; // ms
+    long try_count = 3;
+    long time_per_try = max_time / try_count; // ms
+    for (int i = 0; i < try_count; i++) {
+        time_out = hbco::Poll(fd, epoll_events, time_per_try);
         if (!time_out) {
             break;
         }
@@ -92,28 +107,24 @@ connect(int fd, const struct sockaddr* address, socklen_t address_length) {
 
 ssize_t
 read(int fd, void* buffer, size_t length) {
-    // if (fd != hbco::CurrListeningFd()) {
-    //     return g_syscall_read(fd, buffer, length);
-    // }
+    if (!can_use_syscall_hook.test(fd)) {
+        return g_syscall_read(fd, buffer, length);
+    }
     uint32_t epoll_events = EPOLLIN | EPOLLET;
     ssize_t ret = -1;
-    // while (true) {
     bool time_out = hbco::Poll(fd, epoll_events, 1000);
-    //     if (!time_out) {
-    //         break;
-    //     }
-    // }
     ret = g_syscall_read(fd, buffer, length);
+#ifdef DEBUG
     gCount++;
-
+#endif
     return ret;
 }
 
 ssize_t
 write(int fd, const void* buffer, size_t length) {
-    // if (fd != hbco::CurrListeningFd()) {
-    //     return g_syscall_write(fd, (const char*)buffer, length);
-    // }
+    if (!can_use_syscall_hook.test(fd)) {
+        return g_syscall_write(fd, buffer, length);
+    }
     uint32_t epoll_events = EPOLLOUT | EPOLLET;
     size_t wrote_length = 0;
     while (wrote_length < length) {
@@ -124,10 +135,52 @@ write(int fd, const void* buffer, size_t length) {
         }
         wrote_length += ret;
     }
-    // pthread_mutex_lock(&gCountMutex);
+#ifdef DEBUG
     gCount++;
-    // pthread_mutex_unlock(&gCountMutex);
-
-    // hbco::CurrCoroutine()->io_count_++;
+#endif
     return wrote_length;
+}
+
+ssize_t
+recv(int fd, void* buffer, size_t length, int flags) {
+    uint32_t epoll_events = EPOLLIN | EPOLLET;
+    ssize_t ret = -1;
+    while (true) {
+        bool time_out = hbco::Poll(fd, epoll_events, 1000);
+        if (!time_out) {
+            break;
+        }
+    }
+    ret = g_syscall_recv(fd, buffer, length, flags);
+#ifdef DEBUG
+    gCount++;
+#endif
+    return ret;
+}
+
+ssize_t
+send(int fd, const void* buffer, size_t length, int flags) {
+    uint32_t epoll_events = EPOLLOUT | EPOLLET;
+    size_t sent_length = 0;
+    while (sent_length < length) {
+        hbco::Poll(fd, epoll_events);
+        int ret =
+          g_syscall_send(fd, (const char*)buffer + sent_length, length - sent_length, flags);
+        if (ret < 0) {
+            return ret;
+        }
+        sent_length += ret;
+    }
+#ifdef DEBUG
+    gCount++;
+#endif
+    return sent_length;
+}
+
+int
+close(int fd) {
+    if (can_use_syscall_hook.test(fd)) {
+        can_use_syscall_hook.reset(fd);
+    }
+    return g_syscall_close(fd);
 }

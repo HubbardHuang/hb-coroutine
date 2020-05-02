@@ -17,6 +17,17 @@ ServerCoroutine(void* arg) {
     struct sockaddr_in sa;
     socklen_t len = sizeof(sa);
     int client_fd = accept(hbco::CurrListeningFd(), (struct sockaddr*)&sa, &len);
+
+    int conn_fd = socket(AF_INET, SOCK_STREAM, 0);
+    Display(conn_fd);
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;                     //使用IPv4地址
+    serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //具体的IP地址
+    serv_addr.sin_port = htons(9000);                   //端口
+    if (connect(conn_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("connect");
+    }
     while (true) {
         char buffer[100] = { 0 };
         int read_count = read(client_fd, buffer, sizeof(buffer) / sizeof(buffer[0]));
@@ -31,22 +42,16 @@ ServerCoroutine(void* arg) {
         }
         int written_count = write(client_fd, s.data(), s.size());
         if (written_count < 0) {
-            perror("write");
+            perror("write to client");
         }
 
-        // int conn_fd = socket(AF_INET, SOCK_STREAM, 0);
-        // //向服务器（特定的IP和端口）发起请求
-        // struct sockaddr_in serv_addr;
-        // memset(&serv_addr, 0, sizeof(serv_addr));           //每个字节都用0填充
-        // serv_addr.sin_family = AF_INET;                     //使用IPv4地址
-        // serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //具体的IP地址
-        // serv_addr.sin_port = htons(9500);                   //端口
-        // connect(conn_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
-        // char buf[50] = { 0 };
-        // read_count = read(conn_fd, buf, sizeof(buf) / sizeof(buf[0]));
-        // Display(buf);
-        // write(conn_fd, buf, read_count);
-        // break;
+        if (send(conn_fd, "I'm huanghaobo\n", 14, 0) < 0) {
+            perror("send to server");
+        }
+        memset(buffer, 0, 100);
+        if (recv(conn_fd, buffer, sizeof(buffer), 0) < 0) {
+            perror("recv from server");
+        }
     }
 }
 
@@ -57,6 +62,11 @@ main(int argc, char* argv[]) {
     Display(_port);
 
     hbco::CoroutineLauncher cl(gPort);
+    int fd = open("/home/hhb/practice/hb-coroutine/tmp.txt", O_RDWR | O_TRUNC);
+    if (write(fd, "huanghaobo\n", 11) < 0) {
+        perror("write");
+    }
+    close(fd);
 
     gettimeofday(&gTime, nullptr);
     for (uint64_t i = 0; i < _coroutine_amount; i++) {

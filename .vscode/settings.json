@@ -89,7 +89,16 @@
         "memory_resource": "cpp",
         "random": "cpp",
         "string": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "bitset": "cpp",
+        "chrono": "cpp",
+        "condition_variable": "cpp",
+        "ctime": "cpp",
+        "list": "cpp",
+        "ratio": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp",
+        "set": "cpp"
     },
     "workbench.editor.enablePreview": false,
     "shellformat.path": "/home/hhb/.vscode-server/extensions/foxundermoon.shell-format-7.0.1/bin/shfmt_v3.0.1_linux_amd64"

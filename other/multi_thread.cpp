@@ -66,20 +66,40 @@ Worker(void* arg) {
         std::lock_guard<std::mutex> l(gAcceptMutex);
         data->client_fd_ = accept(gListenFd, (struct sockaddr*)&sa, &len);
     }
+    int conn_fd = socket(AF_INET, SOCK_STREAM, 0);
+    Display(conn_fd);
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;                     //使用IPv4地址
+    serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //具体的IP地址
+    serv_addr.sin_port = htons(9000);                   //端口
+    if (connect(conn_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("connect");
+    }
     while (true) {
-        char buf[100] = { 0 };
-        if (read(data->client_fd_, buf, 100) > 0) {
+        char buffer[100] = { 0 };
+        if (read(data->client_fd_, buffer, 100) > 0) {
             std::lock_guard<std::mutex> l(gCountMutex);
             ++gCount;
         } else {
             break;
         }
-        std::string s(buf);
-        for (int i = 0; i < 1000; i++) {
-            s.push_back('a');
-        }
+        // std::string s(buffer);
+        // for (int i = 0; i < 1000; i++) {
+        //     s.push_back('a');
+        // }
 
-        if (write(data->client_fd_, s.data(), s.size()) > 0) {
+        // if (write(data->client_fd_, s.data(), s.size()) > 0) {
+        if (write(data->client_fd_, "I'm huanghaobo\n", 14) > 0) {
+            std::lock_guard<std::mutex> l(gCountMutex);
+            ++gCount;
+        }
+        if (send(conn_fd, "I'm huanghaobo\n", 14, 0) > 0) {
+            std::lock_guard<std::mutex> l(gCountMutex);
+            ++gCount;
+        }
+        memset(buffer, 0, 100);
+        if (recv(conn_fd, buffer, sizeof(buffer), 0) > 0) {
             std::lock_guard<std::mutex> l(gCountMutex);
             ++gCount;
         }

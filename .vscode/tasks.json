@@ -4,7 +4,7 @@
         {
             "type": "shell",
             "label": "g++ build active file",
-            "command": "./compile.sh && rm *.o",
+            "command": "build/make_shared_lib.sh \"-D_coroutine_amount=50 -D_port=8000\"; build/make_example_exe.sh multi_coroutine \"-D_coroutine_amount=50 -D_port=8000\"",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
