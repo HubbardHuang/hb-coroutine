@@ -20,14 +20,16 @@ typedef void (*CoFunc)(void*);
 #define STACK_SIZE 1024 * 128
 #define MAIN_CO_NAME "main_co"
 
+struct socketaddr;
 struct Context;
 class Coroutine {
     friend class CondVar;
     friend bool Poll(int fd, uint32_t epoll_events, long wait_time);
-    friend void EpollEventLoop(void);
+    friend void EpollEventLoop(int);
     friend void ReleaseResources(void);
     friend CoroutineEnvironment::CoroutineEnvironment();
     friend CoroutineEnvironment* CurrEnv(void);
+    friend int accept(int fd, struct sockaddr* address, unsigned int* length);
 
 private:
     CoroutineEnvironment* env_;
@@ -50,6 +52,7 @@ private:
     Context* context_;
     ucontext uctx_;
     long long io_count_;
+    bool can_add_to_pool_;
 
 public:
     // static bool Poll(int fd, uint32_t epoll_events, long wait_time = 1000);

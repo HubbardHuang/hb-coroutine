@@ -19,6 +19,7 @@ Coroutine::Coroutine(const std::string& name)
   : name_(name) {
     sleep_.how_long_ = -1;
     memset(&sleep_.when_, sizeof(timeval), 0);
+    can_add_to_pool_ = false;
     io_count_ = 0;
     stack_ = (name == MAIN_CO_NAME) ? nullptr : (new char[STACK_SIZE]);
     context_ = new Context();
@@ -79,8 +80,13 @@ Coroutine::Container(void* arg) {
     while (true) {
         curr_co->done_ = false;
         co_arg->func_(co_arg->arg_);
-        Display(curr_co->name_);
         curr_co->done_ = true;
+        if (curr_co->can_add_to_pool_ == false) {
+            CurrEnv()->callstack_.pop_back();
+            Coroutine* prev_co = CurrEnv()->callstack_.back();
+            CurrEnv()->callstack_.push_back(curr_co);
+            SwapContext(curr_co->context_, prev_co->context_);
+        }
         // Coroutine::Yield();
         // CurrEnv()->callstack_.pop_back();
         // Coroutine* prev_co = CurrEnv()->callstack_.back();

@@ -13,3 +13,9 @@ function green_echo() {
 function red_echo() {
     color_echo 31 "$1"
 }
+
+function yellow_echo() {
+    color_echo 33 "$1"
+}
+
+# echo -e "\033[42;30m\033[05m 蓝底白字 \033[0m"

@@ -22,7 +22,7 @@ class CoroutineEnvironment {
     friend CoroutineEnvironment* CurrEnv(void);
     friend Coroutine* CurrCoroutine(void);
     friend void ReleaseResources(void);
-    friend void EpollEventLoop(void);
+    friend void EpollEventLoop(int);
 
 private:
     int listen_fd_;

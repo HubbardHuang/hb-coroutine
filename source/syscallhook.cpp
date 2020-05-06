@@ -57,7 +57,10 @@ socket(int domain, int type, int protocol) {
 
 int
 accept(int fd, struct sockaddr* address, socklen_t* length) {
-    hbco::CurrEnv()->accept_cond_.Wait();
+    hbco::CoroutineEnvironment* curr_env = hbco::CurrEnv();
+    curr_env->accept_cond_.Wait();
+    hbco::Coroutine* curr_co = hbco::CurrCoroutine();
+    curr_co->can_add_to_pool_ = true;
     uint32_t epoll_events = EPOLLIN;
     int client_fd = -1;
     while (true) {
@@ -67,7 +70,6 @@ accept(int fd, struct sockaddr* address, socklen_t* length) {
         }
     }
     client_fd = g_syscall_accept(fd, address, length);
-    Display(client_fd);
     int flags = fcntl(client_fd, F_GETFL, 0);
     if (flags == -1) {
         perror("accept->fcntl-get");
@@ -82,6 +84,8 @@ accept(int fd, struct sockaddr* address, socklen_t* length) {
         return -1;
     }
     can_use_syscall_hook.set(client_fd);
+    gFdType[client_fd] = ClientConnection;
+    gClientConnectionCount++;
     return client_fd;
 }
 
@@ -89,6 +93,9 @@ int
 connect(int fd, const struct sockaddr* address, socklen_t address_length) {
     int ret = g_syscall_connect(fd, address, address_length);
     if (ret >= 0) {
+        return ret;
+    }
+    if (!(ret < 0 && errno == EINPROGRESS)) {
         return ret;
     }
     uint32_t epoll_events = EPOLLOUT;
@@ -102,7 +109,22 @@ connect(int fd, const struct sockaddr* address, socklen_t address_length) {
             break;
         }
     }
-    return time_out ? -1 : 0;
+    if (time_out) {
+        return -1;
+    }
+    int err = 0;
+    socklen_t errlen = sizeof(err);
+    ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen);
+    if (ret < 0) {
+        return ret;
+    } else if (err != 0) {
+        errno = err;
+        return -1;
+    }
+    errno = 0;
+    gFdType[fd] = ServerConnection;
+    gServerConnectionCount++;
+    return 0;
 }
 
 ssize_t
@@ -182,5 +204,11 @@ close(int fd) {
     if (can_use_syscall_hook.test(fd)) {
         can_use_syscall_hook.reset(fd);
     }
+    if (gFdType[fd] == ClientConnection) {
+        gClientConnectionCount--;
+    } else if (gFdType[fd] == ServerConnection) {
+        gServerConnectionCount--;
+    }
+    gFdType[fd] = OTHER;
     return g_syscall_close(fd);
 }

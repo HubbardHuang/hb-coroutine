@@ -18,23 +18,13 @@ ServerCoroutine(void* arg) {
     socklen_t len = sizeof(sa);
     int client_fd = accept(hbco::CurrListeningFd(), (struct sockaddr*)&sa, &len);
 
-    // int conn_fd = socket(AF_INET, SOCK_STREAM, 0);
-    // struct sockaddr_in serv_addr;
-    // memset(&serv_addr, 0, sizeof(serv_addr));
-    // serv_addr.sin_family = AF_INET;                     //使用IPv4地址
-    // serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //具体的IP地址
-    // serv_addr.sin_port = htons(9000);                   //端口
-    // if (connect(conn_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-    //     perror("connect");
-    // }
     while (true) {
         char buffer[100] = { 0 };
-        // read
         int read_count = read(client_fd, buffer, sizeof(buffer) / sizeof(buffer[0]));
         if (read_count < 0) {
-            perror("read from client");
+            perror("read");
         }
-        if (read_count <= 0) {
+        if (read_count == 0) {
             close(client_fd);
             break;
         }
@@ -43,25 +33,12 @@ ServerCoroutine(void* arg) {
         for (int i = 0; i < 1000; i++) {
             s.push_back('a');
         }
-        // write
         int written_count = write(client_fd, s.data(), s.size());
         if (written_count < 0) {
             perror("write to client");
+            close(client_fd);
+            break;
         }
-        // // send
-        // if (send(conn_fd,
-        //          "Comparing network IO handling between multi-thread and multi-coroutine\n", 71,
-        //          0) < 0) {
-        //     perror("send to server");
-        // }
-        // memset(buffer, 0, 100);
-        // // recv
-        // int recv_count = recv(conn_fd, buffer, sizeof(buffer), 0);
-        // if (recv_count > 0) {
-        // } else {
-        //     close(conn_fd);
-        //     break;
-        // }
     }
 }
 
@@ -83,7 +60,7 @@ main(int argc, char* argv[]) {
         hbco::Coroutine::Resume(server_co);
     }
 
-    hbco::EpollEventLoop(1);
+    hbco::EpollEventLoop(2);
 
     return 0;
 }

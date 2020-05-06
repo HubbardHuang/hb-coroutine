@@ -5,7 +5,7 @@
 
 namespace hbco {
 
-extern void EpollEventLoop(void);
+extern void EpollEventLoop(int promt);
 extern bool Poll(int fd, uint32_t epoll_events, long wait_time = 1000);
 
 } // namespace hbco

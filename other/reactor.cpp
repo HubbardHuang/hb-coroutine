@@ -10,6 +10,9 @@
 #include <unistd.h>
 
 #include <iostream>
+
+#include "/home/hhb/practice/hb-coroutine/source/log.h"
+
 epoll_event ev;
 #define Display(x)                                                                                 \
     do {                                                                                           \
@@ -42,7 +45,6 @@ void Read1(int myfd, int epfd, EpollData* ed);
 void Connect1(int myfd, int epfd, EpollData* ed);
 void Send1(int myfd, int epfd, EpollData* ed);
 void Recv1(int myfd, int epfd, EpollData* ed);
-// void Write1(int myfd, int epfd, EpollData* ed);
 
 TaskFunc* gClientTask[100] = { Write1 };
 
@@ -51,9 +53,12 @@ MainTask(int fd, int epfd, EpollData* arg) {}
 
 void
 Write1(int myfd, int epfd, EpollData* ed) {
-    std::cout << "Write1" << std::endl;
-    write(myfd, "hb", 2);
+    // 1st. 执行动作
+    write(myfd, "Reactor model.\n", 17);
+    printf("1. 刚完成向客户端发送消息的写操作，等待客户端的数据到来再进行读操作...\n");
+    // 2nd. 设置好下次等待事件
     ed->fd_ = myfd;
+    // 2nd. 以及事件发生时触发哪个函数
     ed->task_ = Read1;
     ev.events = EPOLLIN | EPOLLET;
     epoll_ctl(epfd, EPOLL_CTL_MOD, myfd, &ev);
@@ -61,13 +66,10 @@ Write1(int myfd, int epfd, EpollData* ed) {
 
 void
 Read1(int myfd, int epfd, EpollData* ed) {
-    std::cout << "Read1" << std::endl;
     char buffer[100] = { 0 };
     read(myfd, buffer, 100);
-    ed->fd_ = myfd;
-    ed->task_ = Connect1;
-    ev.data.ptr = ed;
-    ev.events = EPOLLOUT | EPOLLET;
+    printf(
+      "2. 已经完成获取客户端消息的读操作，等待客户端的数据到来再进行向上级服务端的连接操作...\n");
     int conn_fd = socket(AF_INET, SOCK_STREAM, 0);
     SetNonBlock(conn_fd);
     struct sockaddr_in serv_addr;
@@ -75,22 +77,26 @@ Read1(int myfd, int epfd, EpollData* ed) {
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     serv_addr.sin_port = htons(9000);
-    if (connect(conn_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-        perror("connect");
+    ed->fd_ = myfd;
+    ed->task_ = Connect1;
+    ev.data.ptr = ed;
+    ev.events = EPOLLOUT | EPOLLET;
+    if (connect(myfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        // perror("connect");
     }
     epoll_ctl(epfd, EPOLL_CTL_MOD, myfd, &ev);
 }
 
 void
 Connect1(int myfd, int epfd, EpollData* ed) {
-    std::cout << "Connect1" << std::endl;
+    printf(
+      "3. "
+      "已经完成连接上级服务端的操作，等待内核缓冲区准备好再进行向上级服务端发送消息的写操作...\n");
+    sleep(2);
     int err = 0;
     socklen_t errlen = sizeof(err);
     int ret = getsockopt(myfd, SOL_SOCKET, SO_ERROR, &err, &errlen);
-    if (ret < 0) {
-        //...
-        return;
-    }
+
     ev.events = EPOLLOUT | EPOLLET;
     ed->task_ = Send1;
     ed->fd_ = myfd;
@@ -100,8 +106,10 @@ Connect1(int myfd, int epfd, EpollData* ed) {
 
 void
 Send1(int myfd, int epfd, EpollData* ed) {
-    std::cout << "Send1" << std::endl;
-    write(myfd, "huanghaobo", 10);
+    printf(
+      "4. 已经完成向上级服务端发送消息的写操作，等服务端消息到达后再进行获取上级服务端消息消息的读"
+      "操作...\n");
+    write(myfd, "Reactor model.\n", 17);
     ed->fd_ = myfd;
     ed->task_ = Recv1;
     ev.events = EPOLLIN | EPOLLET;
@@ -110,12 +118,14 @@ Send1(int myfd, int epfd, EpollData* ed) {
 
 void
 Recv1(int myfd, int epfd, EpollData* ed) {
-    std::cout << "Recv1" << std::endl;
     char buffer[100] = { 0 };
     recv(myfd, buffer, 100, 0);
+    printf("5. 已经完成获取服务端消息的读操作\n");
     Display(buffer);
+    printf("5个事件已全部完成，退出Reactor模型\n");
     epoll_ctl(epfd, EPOLL_CTL_DEL, myfd, nullptr);
     close(myfd);
+    exit(0);
 }
 
 static int
@@ -141,9 +151,10 @@ main(int argc, char* argv[]) {
     int epfd = epoll_create1(0);
     int listen_fd = create_and_bind(_port);
     SetNonBlock(listen_fd);
-    Display(listen(listen_fd, 128));
+    listen(listen_fd, 128);
 
     EpollData main_ed(listen_fd, MainTask);
+    printf("注册回调函数，等待客户端连接...\n");
     ev.events = EPOLLIN | EPOLLET;
     ev.data.ptr = &main_ed;
     epoll_ctl(epfd, EPOLL_CTL_ADD, listen_fd, &ev);
