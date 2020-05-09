@@ -12,6 +12,7 @@
 #include "global.h"
 #include "log.h"
 
+// void xxx(int a, int b){}
 void
 ClientCoroutine(void* arg) {
     // struct sockaddr_in sa;
@@ -26,42 +27,28 @@ ClientCoroutine(void* arg) {
     if (connect(conn_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         perror("connect");
     }
-    std::string msg("huanghaobo");
+    std::string msg("a client coroutine\n");
     int written_length = write(conn_fd, msg.data(), msg.size());
     if (written_length < 0) {
         perror("write");
     }
-    char buffer[100] = { 0 };
-    int read_length = read(conn_fd, buffer, sizeof(buffer));
-    if (read_length < 0) {
-        perror("read");
-    } else if (read_length == 0) {
-        close(conn_fd);
-        return;
-    }
-    Display(buffer);
     return;
 }
 
 int
 main(int argc, char* argv[]) {
-    gPort = _port;
+    gPort = 12000;
 
     hbco::CoroutineLauncher cl(gPort);
-    // int fd = open("/home/hhb/practice/hb-coroutine/tmp.txt", O_RDWR | O_TRUNC);
-    // if (write(fd, "huanghaobo\n", 11) < 0) {
-    //     perror("write");
-    // }
-    // close(fd);
 
     gettimeofday(&gTime, nullptr);
     for (uint64_t i = 0; i < _coroutine_amount; i++) {
-        hbco::Coroutine* server_co =
+        hbco::Coroutine* client_co =
           hbco::Coroutine::Create("server_co_" + std::to_string(i), ClientCoroutine, nullptr);
-        hbco::Coroutine::Resume(server_co);
+        hbco::Coroutine::Resume(client_co);
     }
 
-    hbco::EpollEventLoop(1);
+    hbco::EpollEventLoop(3);
 
     return 0;
 }

@@ -10,3 +10,5 @@ long long gServerConnectionCount;
 int gFdType[1000] = { OTHER };
 
 std::list<std::vector<long long>> gContent;
+
+FILE* gDataTxt = nullptr;

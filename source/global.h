@@ -7,6 +7,8 @@
 #include <pthread.h>
 #include <sys/time.h>
 
+#include <stdio.h>
+
 extern pthread_mutex_t gCountMutex;
 extern int gPort;
 extern long long gCount;
@@ -22,5 +24,7 @@ extern int gFdType[1000];
 
 #define LINE_MAX 5
 extern std::list<std::vector<long long>> gContent;
+
+extern FILE* gDataTxt;
 
 #endif

@@ -100,7 +100,7 @@ connect(int fd, const struct sockaddr* address, socklen_t address_length) {
     }
     uint32_t epoll_events = EPOLLOUT;
     bool time_out = true;
-    long max_time = 750000; // ms
+    long max_time = 75000; // ms
     long try_count = 3;
     long time_per_try = max_time / try_count; // ms
     for (int i = 0; i < try_count; i++) {
@@ -132,7 +132,7 @@ read(int fd, void* buffer, size_t length) {
     if (!can_use_syscall_hook.test(fd)) {
         return g_syscall_read(fd, buffer, length);
     }
-    uint32_t epoll_events = EPOLLIN | EPOLLET;
+    uint32_t epoll_events = EPOLLIN | EPOLLERR | EPOLLHUP;
     ssize_t ret = -1;
     bool time_out = hbco::Poll(fd, epoll_events, 1000);
     ret = g_syscall_read(fd, buffer, length);
@@ -147,15 +147,25 @@ write(int fd, const void* buffer, size_t length) {
     if (!can_use_syscall_hook.test(fd)) {
         return g_syscall_write(fd, buffer, length);
     }
-    uint32_t epoll_events = EPOLLOUT | EPOLLET;
-    size_t wrote_length = 0;
+    uint32_t epoll_events = EPOLLOUT | EPOLLERR | EPOLLHUP;
+    ssize_t wrote_length = 0;
+    int ret = g_syscall_write(fd, (const char*)buffer + wrote_length, length - wrote_length);
+    if (ret == 0) {
+        return ret;
+    }
+    if (ret > 0) {
+        wrote_length += ret;
+    }
     while (wrote_length < length) {
         hbco::Poll(fd, epoll_events);
-        int ret = g_syscall_write(fd, (const char*)buffer + wrote_length, length - wrote_length);
-        if (ret < 0) {
-            return ret;
+        ret = g_syscall_write(fd, (const char*)buffer + wrote_length, length - wrote_length);
+        if (ret <= 0) {
+            break;
         }
         wrote_length += ret;
+    }
+    if (ret <= 0 && wrote_length == 0) {
+        return ret;
     }
 #ifdef DEBUG
     gCount++;
@@ -164,8 +174,36 @@ write(int fd, const void* buffer, size_t length) {
 }
 
 ssize_t
+send(int fd, const void* buffer, size_t length, int flags) {
+    uint32_t epoll_events = EPOLLOUT | EPOLLERR | EPOLLHUP;
+    ssize_t sent_length = 0;
+    int ret = g_syscall_send(fd, (const char*)buffer + sent_length, length - sent_length, flags);
+    if (ret == 0) {
+        return ret;
+    }
+    if (ret > 0) {
+        sent_length += ret;
+    }
+    while (sent_length < length) {
+        hbco::Poll(fd, epoll_events);
+        ret = g_syscall_send(fd, (const char*)buffer + sent_length, length - sent_length, flags);
+        if (ret <= 0) {
+            break;
+        }
+        sent_length += ret;
+    }
+    if (ret <= 0 && sent_length == 0) {
+        return ret;
+    }
+#ifdef DEBUG
+    gCount++;
+#endif
+    return sent_length;
+}
+
+ssize_t
 recv(int fd, void* buffer, size_t length, int flags) {
-    uint32_t epoll_events = EPOLLIN | EPOLLET;
+    uint32_t epoll_events = EPOLLIN | EPOLLERR | EPOLLHUP;
     ssize_t ret = -1;
     while (true) {
         bool time_out = hbco::Poll(fd, epoll_events, 1000);
@@ -178,25 +216,6 @@ recv(int fd, void* buffer, size_t length, int flags) {
     gCount++;
 #endif
     return ret;
-}
-
-ssize_t
-send(int fd, const void* buffer, size_t length, int flags) {
-    uint32_t epoll_events = EPOLLOUT | EPOLLET;
-    size_t sent_length = 0;
-    while (sent_length < length) {
-        hbco::Poll(fd, epoll_events);
-        int ret =
-          g_syscall_send(fd, (const char*)buffer + sent_length, length - sent_length, flags);
-        if (ret < 0) {
-            return ret;
-        }
-        sent_length += ret;
-    }
-#ifdef DEBUG
-    gCount++;
-#endif
-    return sent_length;
 }
 
 int

@@ -19,6 +19,11 @@
 #define b_GREEN_f_BLACK(f) "\033[102;30m\033[5m" f "\033[0m"
 #define b_BLUE_f_BLACK(f) "\033[106;30m\033[5m" f "\033[0m"
 #define GO_UP_N_LINE(n) printf("\33[%lldA", n)
+#define GO_DOWN_N_LINE(n)                                                                          \
+    do {                                                                                           \
+        printf("\r\33[%lldB", n);                                                                  \
+        fflush(stdout);                                                                            \
+    } while (false)
 #define TO_Nth_COL(n) printf("\r\33[" #n "C")
 #else
 #define Display(x)

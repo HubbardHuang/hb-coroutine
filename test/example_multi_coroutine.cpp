@@ -21,9 +21,9 @@ ServerCoroutine(void* arg) {
     // int conn_fd = socket(AF_INET, SOCK_STREAM, 0);
     // struct sockaddr_in serv_addr;
     // memset(&serv_addr, 0, sizeof(serv_addr));
-    // serv_addr.sin_family = AF_INET;                     //使用IPv4地址
-    // serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //具体的IP地址
-    // serv_addr.sin_port = htons(9000);                   //端口
+    // serv_addr.sin_family = AF_INET;                        //使用IPv4地址
+    // serv_addr.sin_addr.s_addr = inet_addr("192.168.56.1"); //具体的IP地址
+    // serv_addr.sin_port = htons(9000);                      //端口
     // if (connect(conn_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
     //     perror("connect");
     // }
@@ -48,10 +48,11 @@ ServerCoroutine(void* arg) {
         if (written_count < 0) {
             perror("write to client");
         }
-        // // send
+        // send
         // if (send(conn_fd,
         //          "Comparing network IO handling between multi-thread and multi-coroutine\n", 71,
         //          0) < 0) {
+        // if (send(conn_fd, s.data(), s.size(), 0) < 0) {
         //     perror("send to server");
         // }
         // memset(buffer, 0, 100);
@@ -70,11 +71,8 @@ main(int argc, char* argv[]) {
     gPort = _port;
 
     hbco::CoroutineLauncher cl(gPort);
-    int fd = open("/home/hhb/practice/hb-coroutine/tmp.txt", O_RDWR | O_TRUNC);
-    if (write(fd, "huanghaobo\n", 11) < 0) {
-        perror("write");
-    }
-    close(fd);
+    gDataTxt = fopen("/home/hhb/practice/hb-coroutine/coroutine_io_data.txt", "w");
+    fprintf(gDataTxt, "多协程网络IO每秒读写次数\n");
 
     gettimeofday(&gTime, nullptr);
     for (uint64_t i = 0; i < _coroutine_amount; i++) {

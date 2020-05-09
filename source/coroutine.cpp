@@ -52,9 +52,6 @@ Coroutine::Yield() {
     CoroutineEnvironment* curr_env = CurrEnv();
     Coroutine* curr_co = curr_env->callstack_.back();
     curr_co->can_run_next_time_ = true;
-    // curr_env->callstack_.pop_back();
-    // Coroutine* prev_co = curr_env->callstack_.back();
-    // curr_env->callstack_.push_back(curr_co);
     Coroutine* prev_co = curr_env->callstack_[curr_env->callstack_.size() - 2];
     SwapContext(curr_co->context_, prev_co->context_);
     curr_co->can_run_next_time_ = false;
@@ -100,7 +97,7 @@ Coroutine::Create(const std::string& name, CoFunc func, void* arg) {
     Coroutine* co = new Coroutine(name);
     co->can_run_next_time_ = true;
     CoArg* co_arg = new CoArg(func, arg);
-    // make context
+    // make context for asm swapping
     co->context_->stack_ptr_ = co->stack_;
     co->context_->stack_size_ = STACK_SIZE;
     void* stack_top = co->context_->stack_ptr_ + co->context_->stack_size_ - sizeof(void*);
@@ -113,6 +110,7 @@ Coroutine::Create(const std::string& name, CoFunc func, void* arg) {
     co->context_->register_[kRDI] = reinterpret_cast<void*>(co_arg);
     co->context_->register_[kRSI] = reinterpret_cast<void*>(0);
 
+    // make context for ucontext swapping
     getcontext(&co->uctx_);
     co->uctx_.uc_stack.ss_sp = co->stack_;
     co->uctx_.uc_stack.ss_size = STACK_SIZE;
@@ -120,7 +118,6 @@ Coroutine::Create(const std::string& name, CoFunc func, void* arg) {
     co->uctx_.uc_link = &(CurrEnv()->callstack_.back()->uctx_);
     makecontext(&co->uctx_, (void (*)(void))Container, 1, co_arg);
     CurrEnv()->coroutines_.insert({ co, true });
-    // Display(name);
     return co;
 }
 
