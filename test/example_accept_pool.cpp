@@ -36,8 +36,8 @@ ServerCoroutine(void* arg) {
         int written_count = write(client_fd, s.data(), s.size());
         if (written_count < 0) {
             perror("write to client");
-            close(client_fd);
-            break;
+            // close(client_fd);
+            // break;
         }
     }
 }
@@ -47,11 +47,8 @@ main(int argc, char* argv[]) {
     gPort = _port;
 
     hbco::CoroutineLauncher cl(gPort);
-    int fd = open("/home/hhb/practice/hb-coroutine/tmp.txt", O_RDWR | O_TRUNC);
-    if (write(fd, "huanghaobo\n", 11) < 0) {
-        perror("write");
-    }
-    close(fd);
+    gDataTxt = fopen("/home/hhb/practice/hb-coroutine/coroutine_io_data.txt", "w");
+    fprintf(gDataTxt, "多协程网络IO每秒读写次数\n");
 
     gettimeofday(&gTime, nullptr);
     for (uint64_t i = 0; i < _coroutine_amount; i++) {
